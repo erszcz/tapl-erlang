@@ -1,9 +1,3 @@
-tapl
-=====
+# My TaPL solutions in Erlang
 
-An OTP library
-
-Build
------
-
-    $ rebar3 compile
+See https://www.cis.upenn.edu/~bcpierce/tapl/
