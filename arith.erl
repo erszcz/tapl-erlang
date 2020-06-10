@@ -47,43 +47,21 @@ eval1(T) ->
             {succ, Info, T1_};
         {pred, _, {zero, _}} ->
             {zero, 0};
-        {pred, _, T1} ->
-            case T1 of
-                {succ, _, NV1} ->
-                    case is_numeric_val(NV1) of
-                        true ->
-                            NV1;
-                        false ->
-                            eval1_pred_non_numeric(T)
-                    end;
-                _ ->
-                    eval1_pred_non_numeric(T)
-            end;
+        {pred, _, {succ, _, T1}} ->
+            T1;
+        {pred, Info, T1} ->
+            T1_ = eval1(T1),
+            {pred, Info, T1_};
         {is_zero, _, {zero, _}} ->
             {true, 0};
-        {is_zero, _, T1} ->
-            case T1 of
-                {succ, _, NV1} ->
-                    case is_numeric_val(NV1) of
-                        true ->
-                            {false, 0};
-                        _ ->
-                            eval1_is_zero_non_numeric(T)
-                    end;
-                _ ->
-                    eval1_is_zero_non_numeric(T)
-            end;
+        {is_zero, _, {succ, _, _}} ->
+            {false, 0};
+        {is_zero, Info, T1} ->
+            T1_ = eval1(T1),
+            {is_zero, Info, T1_};
         _ ->
             erlang:error(no_rule_applies)
     end.
-
-eval1_pred_non_numeric({pred, Info, T1}) ->
-    T1_ = eval1(T1),
-    {pred, Info, T1_}.
-
-eval1_is_zero_non_numeric({is_zero, Info, T1}) ->
-    T1_ = eval1(T1),
-    {is_zero, Info, T1_}.
 
 trace() ->
     dbg:tracer(),
