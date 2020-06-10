@@ -1,7 +1,11 @@
 %% @doc This module implements TAPL 4 - the implementation of arithmetic expressions.
 %% See https://www.cis.upenn.edu/~bcpierce/tapl/ for the book.
 -module(arith).
--compile([export_all]).
+
+-export([eval/1,
+         trace/0]).
+
+-export_type([term_/0]).
 
 -type info() :: erl_anno:location().
 
@@ -13,16 +17,6 @@
                | {succ, info(), term()}
                | {pred, info(), term()}
                | {is_zero, info(), term()}.
-
--spec is_numeric_val(term_()) -> boolean().
-is_numeric_val({zero, _}) -> true;
-is_numeric_val({succ, _, T1}) -> is_numeric_val(T1);
-is_numeric_val(_) -> false.
-
--spec is_val(term_()) -> boolean().
-is_val({true, _, _})  -> true;
-is_val({false, _, _}) -> true;
-is_val(T) -> is_numeric_val(T).
 
 -spec eval(term_()) -> term_().
 eval(T) ->
