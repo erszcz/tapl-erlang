@@ -89,3 +89,37 @@ trace() ->
     dbg:tracer(),
     dbg:p(all, call),
     dbg:tpl(?MODULE, x).
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+
+eval_test_() ->
+    [
+     ?_assertEqual({zero, 0},
+                   eval({zero, 0})),
+     ?_assertEqual({succ, 0, {zero, 0}},
+                   eval({succ, 0, {zero, 0}})),
+     ?_assertEqual({zero, 0},
+                   eval({pred, 0, {succ, 0, {zero, 0}}})),
+     ?_assertEqual({zero, 0},
+                   eval({pred, 0, {pred, 0, {succ, 0, {zero, 0}}}})),
+     ?_assertEqual({succ, 0, {zero, 0}},
+                   eval({succ, 0, {pred, 0, {succ, 0, {zero, 0}}}})),
+     ?_assertEqual({zero, 0},
+                   eval({'if', 0,
+                         {is_zero, 0, {succ, 0, {zero, 0}}},
+                         {succ, 0, {zero, 0}},
+                         {zero, 0}})),
+     ?_assertEqual({succ, 0, {zero, 0}},
+                   eval({'if', 0,
+                         {is_zero, 0, {zero, 0}},
+                         {succ, 0, {zero, 0}},
+                         {zero, 0}})),
+     ?_assertEqual({succ, 0, {zero, 0}},
+                   eval({'if', 0,
+                         {is_zero, 0, {pred, 0, {succ, 0, {zero, 0}}}},
+                         {succ, 0, {zero, 0}},
+                         {zero, 0}}))
+    ].
+
+-endif. %% TEST
