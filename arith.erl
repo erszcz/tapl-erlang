@@ -105,6 +105,10 @@ eval_test_() ->
                    eval({pred, 0, {pred, 0, {succ, 0, {zero, 0}}}})),
      ?_assertEqual({succ, 0, {zero, 0}},
                    eval({succ, 0, {pred, 0, {succ, 0, {zero, 0}}}})),
+     ?_assertEqual({true, 0},
+                   eval({is_zero, 0, {zero, 0}})),
+     ?_assertEqual({false, 0},
+                   eval({is_zero, 0, {succ, 0, {zero, 0}}})),
      ?_assertEqual({zero, 0},
                    eval({'if', 0,
                          {is_zero, 0, {succ, 0, {zero, 0}}},
@@ -119,7 +123,22 @@ eval_test_() ->
                    eval({'if', 0,
                          {is_zero, 0, {pred, 0, {succ, 0, {zero, 0}}}},
                          {succ, 0, {zero, 0}},
-                         {zero, 0}}))
+                         {zero, 0}})),
+     ?_assertEqual({succ, 0, {zero, 0}},
+                   eval({pred, 0, {'if', 0,
+                                   {is_zero, 0, {zero, 0}},
+                                   {succ, 0, {succ, 0, {zero, 0}}},
+                                   {succ, 0, {zero, 0}}}})),
+     ?_assertEqual({true, 0},
+                   eval({is_zero, 0, {'if', 0,
+                                      {is_zero, 0, {succ, 0, {zero, 0}}},
+                                      {succ, 0, {zero, 0}},
+                                      {zero, 0}}})),
+     ?_assertEqual({false, 0},
+                   eval({is_zero, 0, {'if', 0,
+                                      {is_zero, 0, {zero, 0}},
+                                      {succ, 0, {zero, 0}},
+                                      {zero, 0}}}))
     ].
 
 -endif. %% TEST
