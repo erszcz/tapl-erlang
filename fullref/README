@@ -1,0 +1,3 @@
+Haskell port of the fullref OCaml implementation of TAPL, which is described in Chapter 12
+
+It makes use of code generation-- see ../generator/README.

@@ -1,0 +1,3 @@
+Haskell port of the simplebool OCaml implementation of TAPL described in chapter 10.
+
+It makes use of code generation-- see ../generator/README.

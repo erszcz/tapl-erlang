@@ -1,0 +1,7 @@
+(lambda x:Bot. x) : Bot -> Bot
+(lambda x:Bot. x x) : Bot -> Bot
+(lambda x:Bool. x) : Bool -> Bool
+true : Bool
+error : Bool
+error : Bot
+error : Bool

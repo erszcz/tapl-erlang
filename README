@@ -1,0 +1,8 @@
+The goal of this project is to create Haskell ports of the OCaml implementations of "Types and Programming Languages" (TAPL), by Benjamin C. Pierce.  For an overview, see:
+ 
+http://code.google.com/p/tapl-haskell/
+
+It depends on the Parsec and HUnit libraries, which must be separately installed on your system.  These implementations have only been tested using GHC on Ubuntu, with the above libraries installed.
+  
+To test the entire project, go to the "common" subdirectory and execute "make all-test".  Other global commands (e.g., code generation) are also launched from that directory.
+
