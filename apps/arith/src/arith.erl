@@ -22,11 +22,11 @@
 eval(T) ->
     try
         eval(eval1(T))
-    catch error:no_rule_applies ->
+    catch throw:no_rule_applies ->
         T
     end.
 
--spec eval1(term_()) -> term_() | no_rule_applies.
+-spec eval1(term_()) -> term_().
 eval1(T) ->
     case T of
         {'if', _, {true, _}, T2, _} ->
@@ -54,7 +54,7 @@ eval1(T) ->
             T1_ = eval1(T1),
             {is_zero, Info, T1_};
         _ ->
-            erlang:error(no_rule_applies)
+            erlang:throw(no_rule_applies)
     end.
 
 trace() ->
