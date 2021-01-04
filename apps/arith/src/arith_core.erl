@@ -1,6 +1,6 @@
 %% @doc This module implements TAPL 4 - the implementation of arithmetic expressions.
 %% See https://www.cis.upenn.edu/~bcpierce/tapl/ for the book.
--module(arith).
+-module(arith_core).
 
 -export([eval/1,
          trace/0]).
