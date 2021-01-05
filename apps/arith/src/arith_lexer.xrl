@@ -1,6 +1,6 @@
 Definitions.
 
-WS  = [\s\009\012]
+WS = [\s\011\012]
 
 Rules.
 
