@@ -16,11 +16,14 @@ zero_test_() ->
 
 lexer_test() ->
     Data = data(),
-    ?assertEqual({ok,[{comment_start,1,"/*"},
-                      {ucid,1,"Examples"},
+    ?assertEqual({ok,[{lcomment,1,"/*"},
+                      {int_value,1,"1"},
+                      {lcid,1,"or"},
+                      {int_value,1,"2"},
+                      {lcid,1,"examples"},
                       {lcid,1,"for"},
                       {lcid,1,"testing"},
-                      {comment_end,1,"*/"},
+                      {rcomment,1,"*/"},
                       {true,3,"true"},
                       {semi,3,";"},
                       {'if',4,"if"},

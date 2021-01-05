@@ -8,10 +8,10 @@ Rules.
     skip_token.
 
 \/\* :
-    {token, {comment_start, TokenLine, TokenChars}}.
+    {token, {lcomment, TokenLine, TokenChars}}.
 
 \*\/ :
-    {token, {comment_end, TokenLine, TokenChars}}.
+    {token, {rcomment, TokenLine, TokenChars}}.
 
 [0-9]+ :
     {token, {int_value, TokenLine, TokenChars}}.
