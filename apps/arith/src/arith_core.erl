@@ -5,18 +5,7 @@
 -export([eval/1,
          trace/0]).
 
--export_type([term_/0]).
-
--type info() :: erl_anno:location().
-
-%% This type is called `term' in TAPL, but `term()' is a builtin type in Erlang.
--type term_() :: {true, info()}
-               | {false, info()}
-               | {'if', info(), term_(), term_(), term_()}
-               | {zero, info()}
-               | {succ, info(), term()}
-               | {pred, info(), term()}
-               | {is_zero, info(), term()}.
+-type term_() :: arith_syntax:term_().
 
 -spec eval(term_()) -> term_().
 eval(T) ->

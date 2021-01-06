@@ -23,8 +23,8 @@ AppTerm -> iszero ATerm : {is_zero, info, '$2'}.
 
 %% Atomic terms are ones that never require extra parentheses
 ATerm -> lparen Term rparen : '$2'.
-ATerm -> true : {true, info, '$1'}.
-ATerm -> false : {false, info, '$1'}.
+ATerm -> true : {true, info}.
+ATerm -> false : {false, info}.
 ATerm -> int_value : int_value('$1').
 
 Erlang code.
