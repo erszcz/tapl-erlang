@@ -1,17 +1,19 @@
 Definitions.
 
 WS = [\s\011\012]
+LCOMMENT = \/\*
+RCOMMENT = \*\/
 
 Rules.
 
 {WS}+ :
     skip_token.
 
-\/\* :
-    {token, {lcomment, TokenLine, TokenChars}}.
+{RCOMMENT} :
+    {error, "unmatched end of comment"}.
 
-\*\/ :
-    {token, {rcomment, TokenLine, TokenChars}}.
+{LCOMMENT}.*{RCOMMENT} :
+    {token, {comment, TokenLine, TokenChars}}.
 
 [0-9]+ :
     {token, {int_value, TokenLine, TokenChars}}.

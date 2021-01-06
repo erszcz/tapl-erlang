@@ -1,38 +1,15 @@
 Nonterminals
-    Top Comment Command Term AppTerm ATerm
-    Commented Commented1.
+    Top Command Term AppTerm ATerm.
 
 Terminals
-    semi lcomment rcomment lparen rparen if then else true false succ pred
-    iszero int_value lcid ucid.
+    if then else true false succ pred iszero int_value
+    comment semi lparen rparen.
 
 Rootsymbol Top.
 
 Top -> Command semi : ['$1'].
 Top -> Command semi Top : ['$1' | '$3'].
-Top -> Comment Top : '$2'.
-
-%% Nested comments are not handled yet
-Comment -> lcomment rcomment.
-Comment -> lcomment Commented rcomment.
-
-Commented -> Commented1.
-Commented -> Commented1 Commented.
-
-Commented1 -> semi.
-Commented1 -> lparen.
-Commented1 -> rparen.
-Commented1 -> if.
-Commented1 -> then.
-Commented1 -> else.
-Commented1 -> true.
-Commented1 -> false.
-Commented1 -> succ.
-Commented1 -> pred.
-Commented1 -> iszero.
-Commented1 -> int_value.
-Commented1 -> lcid.
-Commented1 -> ucid.
+Top -> comment Top : '$2'.
 
 Command -> Term : {eval, info, '$1'}.
 
