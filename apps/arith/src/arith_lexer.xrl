@@ -35,6 +35,6 @@ Rules.
 
 Erlang code.
 
-%% Erlance code is taken out to a separate file,
+%% Erlang code is taken out to a separate file,
 %% as Leex special syntax breaks code indendation / syntax highlighting.
 -include("arith_lexer.hrl").
