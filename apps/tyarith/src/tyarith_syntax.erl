@@ -1,9 +1,14 @@
 -module(tyarith_syntax).
 
--export([format_term/1, format_term/2]).
+-export([format_term/1, format_term/2,
+         format_type/1, format_type/2]).
 
 -export_type([command/0,
-              term_/0]).
+              term_/0,
+              type/0]).
+
+-type type() :: 'Bool'
+              | 'Nat'.
 
 -type info() :: integer().
 
@@ -59,7 +64,7 @@ prettypr_a_term(_Outer, {zero, _}) ->
     prettypr:text("0");
 prettypr_a_term(_Outer, {succ, _, T}) ->
     prettypr_succ(T, 1);
-prettypr_a_term(Outer, T) ->
+prettypr_a_term(_Outer, T) ->
     prettypr:beside(prettypr:beside(prettypr:text("("),
                                     prettypr_term(false, T)),
                     prettypr:text(")")).
@@ -72,3 +77,24 @@ prettypr_succ(T, _N) ->
     prettypr:follow(prettypr:text("(succ"),
                     prettypr:beside(prettypr_a_term(false, T),
                                     prettypr:text(")")), 2).
+
+-spec format_type(type()) -> string().
+format_type(Type) ->
+    format_type(Type, #{}).
+
+-spec format_type(type(), map()) -> string().
+format_type(Type, Opts) ->
+    Doc = prettypr_a_type(true, Type),
+    prettypr:format(Doc,
+                    maps:get(paper_width, Opts, 80),
+                    maps:get(line_width, Opts, 65)).
+
+prettypr_type(Outer, Type) ->
+    prettypr_a_type(Outer, Type).
+
+prettypr_a_type(_Outer, 'Bool') -> prettypr:text("Bool");
+prettypr_a_type(_Outer, 'Nat') -> prettypr:text("Nat");
+prettypr_a_type(Outer, Type) ->
+    prettypr:beside(prettypr:text("("),
+                    prettypr:beside(prettypr_type(Outer, Type),
+                                    prettypr:text(")"))).

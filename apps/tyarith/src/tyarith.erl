@@ -22,7 +22,10 @@ process_commands([]) -> ok;
 process_commands([C | Commands]) ->
     case C of
         {eval, _Info, Term} ->
+            Type = tyarith_core:type_of(Term),
             Result = tyarith_core:eval(Term),
-            io:format("~ts\n", [tyarith_syntax:format_term(Result)])
+            io:format("~ts : ~ts\n",
+                      [tyarith_syntax:format_term(Result),
+                       tyarith_syntax:format_type(Type)])
     end,
     process_commands(Commands).

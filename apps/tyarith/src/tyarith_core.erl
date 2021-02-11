@@ -1,9 +1,11 @@
 -module(tyarith_core).
 
 -export([eval/1,
+         type_of/1,
          trace/0]).
 
 -type term_() :: tyarith_syntax:term_().
+-type type() :: tyarith_syntax:type().
 
 -spec eval(term_()) -> term_().
 eval(T) ->
@@ -42,6 +44,41 @@ eval1(T) ->
             {is_zero, Info, T1_};
         _ ->
             erlang:throw(no_rule_applies)
+    end.
+
+-spec type_of(term_()) -> type().
+type_of(T) ->
+    case T of
+        {true, _} -> 'Bool';
+        {false, _} -> 'Bool';
+        {'if', _, T1, T2, T3} ->
+            case type_of(T1) of
+                'Bool' ->
+                    case {type_of(T2), type_of(T3)} of
+                        {Ty, Ty} ->
+                            Ty;
+                        _ ->
+                            erlang:error(cond_arms_of_different_types, [T])
+                    end;
+                _ ->
+                    erlang:error(cond_guard_not_a_boolean, [T])
+            end;
+        {zero, _} -> 'Nat';
+        {succ, _, T1} ->
+            case type_of(T1) of
+                'Nat' -> 'Nat';
+                _ -> erlang:error(succ_arg_not_a_number, [T])
+            end;
+        {pred, _, T1} ->
+            case type_of(T1) of
+                'Nat' -> 'Nat';
+                _ -> erlang:error(pred_arg_not_a_number, [T])
+            end;
+        {is_zero, _, T1} ->
+            case type_of(T1) of
+                'Nat' -> 'Bool';
+                _ -> erlang:error(is_zero_arg_not_a_number, [T])
+            end
     end.
 
 trace() ->
