@@ -1,14 +1,41 @@
+%% IMPORTANT! This module uses the process dictionary!
+
+-export([reset/0]).
+
+%% Reset this module's state in the calling process' dictionary.
+%% Useful when playing with the lexer in the shell.
+reset() ->
+    erlang:erase(col),
+    ok.
+
+span(Line, Chars) ->
+    Col = update_column(Chars),
+    {Line, Col}.
+
+reset_column() ->
+    erlang:put(col, 1).
+
+update_column(Chars) ->
+    case erlang:get(col) of
+        undefined ->
+            reset_column(),
+            update_column(Chars);
+        Col ->
+            erlang:put(col, Col + length(Chars)),
+            Col
+    end.
+
 create_id(Line, Chars) ->
     case reserved_word(Chars) of
         '__not_a_reserved_word__' ->
             case Chars of
                 [C | _] when C >= $A andalso C =< $Z ->
-                    {ucid, Line, Chars};
+                    {ucid, span(Line, Chars), Chars};
                 _ ->
-                    {lcid, Line, Chars}
+                    {lcid, span(Line, Chars), Chars}
             end;
         Token ->
-            {Token, Line, Chars}
+            {Token, span(Line, Chars), Chars}
     end.
 
 reserved_word(Chars) ->
