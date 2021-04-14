@@ -90,7 +90,7 @@ prettypr_a_term(_Outer, {zero, _}) ->
     prettypr:text("0");
 prettypr_a_term(_Outer, {succ, _, T}) ->
     prettypr_succ(T, 1);
-prettypr_a_term(Outer, T) ->
+prettypr_a_term(_Outer, T) ->
     prettypr:beside(prettypr:beside(prettypr:text("("),
                                     prettypr_term(false, T)),
                     prettypr:text(")")).
