@@ -21,7 +21,8 @@ update_column(Chars) ->
             reset_column(),
             update_column(Chars);
         Col ->
-            erlang:put(col, Col + length(Chars)),
+            Len = length(lists:last(string:tokens(Chars, "\n"))),
+            erlang:put(col, Col + Len),
             Col
     end.
 

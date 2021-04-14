@@ -7,6 +7,12 @@ RCOMMENT = \*\/
 
 Rules.
 
+{RCOMMENT} :
+    {error, "unmatched end of comment"}.
+
+{LCOMMENT}[^(\*\/)]+{RCOMMENT} :
+    {token, {comment, span(TokenLine, TokenChars), TokenChars}}.
+
 {WS}+ :
     update_column(TokenChars),
     skip_token.
@@ -14,12 +20,6 @@ Rules.
 {NL} :
     reset_column(),
     skip_token.
-
-{RCOMMENT} :
-    {error, "unmatched end of comment"}.
-
-{LCOMMENT}.*{RCOMMENT} :
-    {token, {comment, span(TokenLine, TokenChars), TokenChars}}.
 
 [0-9]+ :
     {token, {int_value, span(TokenLine, TokenChars), TokenChars}}.
