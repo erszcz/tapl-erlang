@@ -1,5 +1,11 @@
 -module(arith_syntax).
 
+-export(['if'/4,
+         succ/2,
+         pred/2,
+         is_zero/2,
+         eval/1]).
+
 -export([format_term/1, format_term/2]).
 
 -export_type([command/0,
@@ -17,7 +23,32 @@
 %% TAPL `term' type, but `term()' is a builtin type in Erlang,
 %% hence the name `term_()'.
 
+'if'({'if', Info}, Cond, Then, Else) ->
+    {'if', Info, Cond, Then, Else}.
+
+succ({succ, Info}, T) ->
+    {succ, Info, T}.
+
+pred({pred, Info}, T) ->
+    {pred, Info, T}.
+
+is_zero({iszero, Info}, T) ->
+    {is_zero, Info, T}.
+
 -type command() :: {eval, info(), term()}.
+
+eval(T) -> {eval, term_info(T), T}.
+
+term_info(T) ->
+    case T of
+        {true, Info} -> Info;
+        {false, Info} -> Info;
+        {'if', Info, _, _, _} -> Info;
+        {zero, Info} -> Info;
+        {succ, Info, _} -> Info;
+        {pred, Info, _} -> Info;
+        {is_zero, Info, _} -> Info
+    end.
 
 -spec format_term(term_()) -> string().
 format_term(T) -> format_term(T, #{}).

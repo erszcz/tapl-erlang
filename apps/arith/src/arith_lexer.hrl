@@ -31,12 +31,12 @@ create_id(Line, Chars) ->
         '__not_a_reserved_word__' ->
             case Chars of
                 [C | _] when C >= $A andalso C =< $Z ->
-                    {ucid, span(Line, Chars), Chars};
+                    {ucid, span(Line, Chars)};
                 _ ->
-                    {lcid, span(Line, Chars), Chars}
+                    {lcid, span(Line, Chars)}
             end;
         Token ->
-            {Token, span(Line, Chars), Chars}
+            {Token, span(Line, Chars)}
     end.
 
 reserved_word(Chars) ->

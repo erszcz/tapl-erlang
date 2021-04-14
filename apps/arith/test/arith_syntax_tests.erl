@@ -18,7 +18,22 @@ identity_test() ->
                            end, OrigCommands),
     %?debugVal(Pretty, 1000),
     %% THEN tokenising and parsing the pretty printed terms results
-    %% in the same parse tree
+    %% in the same parse tree modulo the token locations
     {ok, NewTokens, _} = arith_lexer:string(Pretty),
     {ok, NewCommands} = arith_parser:parse(NewTokens),
-    ?assertEqual(OrigCommands, NewCommands).
+    OrigCommandsNoInfo = strip_info(OrigCommands),
+    NewCommandsNoInfo = strip_info(NewCommands),
+    ?assertEqual(OrigCommandsNoInfo, NewCommandsNoInfo).
+
+strip_info([]) -> [];
+strip_info([{eval, _Info, T} | Rest]) -> [{eval, info, strip_info(T)} | strip_info(Rest)];
+strip_info(T) ->
+    case T of
+        {true, _Info} -> {true, info};
+        {false, _Info} -> {true, info};
+        {'if', _Info, T1, T2, T3} -> {'if', info, strip_info(T1), strip_info(T2), strip_info(T3)};
+        {zero, _Info} -> {zero, info};
+        {succ, _Info, T1} -> {succ, info, strip_info(T1)};
+        {pred, _Info, T1} -> {pred, info, strip_info(T1)};
+        {is_zero, _Info, T1} -> {is_zero, info, strip_info(T1)}
+    end.
