@@ -5,7 +5,17 @@
 -export([eval/1,
          trace/0]).
 
--type term_() :: arith_syntax:term_().
+%-type term_() :: arith_syntax:term_().
+
+-type info() :: integer().
+
+-type term_() :: {true, info()}
+               | {false, info()}
+               | {'if', info(), term_(), term_(), term_()}
+               | {zero, info()}
+               | {succ, info(), term_()}
+               | {pred, info(), term_()}
+               | {is_zero, info(), term_()}.
 
 -spec eval(term_()) -> term_().
 eval(T) ->
@@ -18,13 +28,6 @@ eval(T) ->
 -spec eval1(term_()) -> term_().
 eval1(T) ->
     case T of
-        {'if', _, {true, _}, T2, _} ->
-            T2;
-        {'if', _, {false, _}, _, T3} ->
-            T3;
-        {'if', Info, T1, T2, T3} ->
-            T1_ = eval1(T1),
-            {'if', Info, T1_, T2, T3};
         {succ, Info, T1} ->
             T1_ = eval1(T1),
             {succ, Info, T1_};
@@ -41,9 +44,7 @@ eval1(T) ->
             {false, 0};
         {is_zero, Info, T1} ->
             T1_ = eval1(T1),
-            {is_zero, Info, T1_};
-        _ ->
-            erlang:throw(no_rule_applies)
+            {is_zero, Info, T1_}
     end.
 
 -spec trace() -> ok.
