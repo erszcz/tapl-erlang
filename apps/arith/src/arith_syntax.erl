@@ -17,9 +17,9 @@
                | {false, info()}
                | {'if', info(), term_(), term_(), term_()}
                | {zero, info()}
-               | {succ, info(), term()}
-               | {pred, info(), term()}
-               | {is_zero, info(), term()}.
+               | {succ, info(), term_()}
+               | {pred, info(), term_()}
+               | {is_zero, info(), term_()}.
 %% TAPL `term' type, but `term()' is a builtin type in Erlang,
 %% hence the name `term_()'.
 
@@ -46,6 +46,7 @@ is_zero({iszero, Info}, T) ->
 -spec eval(term()) -> command().
 eval(T) -> {eval, term_info(T), T}.
 
+-spec term_info(term_()) -> info().
 term_info(T) ->
     case T of
         {true, Info} -> Info;
