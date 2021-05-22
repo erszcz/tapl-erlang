@@ -4,6 +4,7 @@
 
 %% Reset this module's state in the calling process' dictionary.
 %% Useful when playing with the lexer in the shell.
+-spec reset() -> ok.
 reset() ->
     erlang:erase(col),
     ok.
@@ -21,7 +22,10 @@ update_column(Chars) ->
             reset_column(),
             update_column(Chars);
         Col ->
-            Len = length(lists:last(string:tokens(Chars, "\n"))),
+            Len = case string:tokens(Chars, "\n") of
+                      [] -> 0;
+                      NonEmpty -> length(lists:last(NonEmpty))
+                  end,
             erlang:put(col, Col + Len),
             Col
     end.

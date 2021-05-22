@@ -6,6 +6,7 @@ usage(Progname) ->
     io:format("Usage: ~s <source>\n",
               [Progname]).
 
+-spec main([string()]) -> ok.
 main([]) ->
     usage(escript:script_name()),
     erlang:halt(1);

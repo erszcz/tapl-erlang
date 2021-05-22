@@ -46,10 +46,12 @@ eval1(T) ->
             erlang:throw(no_rule_applies)
     end.
 
+-spec trace() -> ok.
 trace() ->
     dbg:tracer(),
     dbg:p(all, call),
-    dbg:tpl(?MODULE, x).
+    dbg:tpl(?MODULE, x),
+    ok.
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").

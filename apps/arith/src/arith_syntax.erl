@@ -23,20 +23,27 @@
 %% TAPL `term' type, but `term()' is a builtin type in Erlang,
 %% hence the name `term_()'.
 
+-type token() :: any().
+
+-spec 'if'(token(), token(), token(), token()) -> term_().
 'if'({'if', Info}, Cond, Then, Else) ->
     {'if', Info, Cond, Then, Else}.
 
+-spec succ(token(), token()) -> term_().
 succ({succ, Info}, T) ->
     {succ, Info, T}.
 
+-spec pred(token(), token()) -> term_().
 pred({pred, Info}, T) ->
     {pred, Info, T}.
 
+-spec is_zero(token(), token()) -> term_().
 is_zero({iszero, Info}, T) ->
     {is_zero, Info, T}.
 
 -type command() :: {eval, info(), term()}.
 
+-spec eval(term()) -> command().
 eval(T) -> {eval, term_info(T), T}.
 
 term_info(T) ->
