@@ -21,13 +21,26 @@
 eval(T) ->
     try
         eval(eval1(T))
-    catch throw:no_rule_applies ->
+    catch throw:constant ->
         T
     end.
 
 -spec eval1(term_()) -> term_().
 eval1(T) ->
     case T of
+        {false, _} ->
+            erlang:throw(constant);
+        %{true, _} ->
+        %    erlang:throw(constant);
+        %{zero, _} ->
+        %    erlang:throw(constant);
+        %{'if', _, {true, _}, T2, _} ->
+        %    T2;
+        %{'if', _, {false, _}, _, T3} ->
+        %    T3;
+        %{'if', Info, T1, T2, T3} ->
+        %    T1_ = eval1(T1),
+        %    {'if', Info, T1_, T2, T3};
         {succ, Info, T1} ->
             T1_ = eval1(T1),
             {succ, Info, T1_};
