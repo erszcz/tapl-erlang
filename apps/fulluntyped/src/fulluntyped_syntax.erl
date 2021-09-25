@@ -32,6 +32,10 @@
 %% TAPL `term' type, but `term()' is a builtin type in Erlang,
 %% hence the name `term_()'.
 
+-type binding() :: name_bind | {abb_bind, term_()}.
+
+-type context() :: [{string(), binding()}].
+
 -type token() :: any().
 
 -spec 'if'(token(), token(), token(), token()) -> term_().
@@ -50,7 +54,8 @@ pred({pred, Info}, T) ->
 is_zero({iszero, Info}, T) ->
     {is_zero, Info, T}.
 
--type command() :: {eval, info(), term()}.
+-type command() :: {eval, info(), term()}
+                 | {bind, info(), string(), binding()}.
 
 -spec eval(term()) -> command().
 eval(T) -> {eval, term_info(T), T}.
