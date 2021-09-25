@@ -16,10 +16,19 @@
 -type term_() :: {true, info()}
                | {false, info()}
                | {'if', info(), term_(), term_(), term_()}
+               | {var, info(), integer(), integer()}
+               | {abs, info(), string(), term_()}
+               | {app, info(), term_(), term_()}
+               | {record, info(), [{string(), term_()}]}
+               | {proj, info(), term_(), string()}
+               | {float, info(), float()}
+               | {times_float, info(), term_(), term_()}
+               | {string, info(), string()}
                | {zero, info()}
                | {succ, info(), term_()}
                | {pred, info(), term_()}
-               | {is_zero, info(), term_()}.
+               | {is_zero, info(), term_()}
+               | {let_, info(), term_(), term_()}.
 %% TAPL `term' type, but `term()' is a builtin type in Erlang,
 %% hence the name `term_()'.
 
