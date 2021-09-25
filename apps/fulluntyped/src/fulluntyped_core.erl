@@ -1,11 +1,11 @@
-%% @doc This module implements TAPL 4 - the implementation of arithmetic expressions.
+%% @doc This module implements TAPL chapters 5, 6, 7.
 %% See https://www.cis.upenn.edu/~bcpierce/tapl/ for the book.
--module(arith_core).
+-module(fulluntyped_core).
 
 -export([eval/1,
          trace/0]).
 
--type term_() :: arith_syntax:term_().
+-type term_() :: fulluntyped_syntax:term_().
 
 -spec eval(term_()) -> term_().
 eval(T) ->

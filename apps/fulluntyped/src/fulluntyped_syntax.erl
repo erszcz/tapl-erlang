@@ -1,4 +1,4 @@
--module(arith_syntax).
+-module(fulluntyped_syntax).
 
 -export(['if'/4,
          succ/2,

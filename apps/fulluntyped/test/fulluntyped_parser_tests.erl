@@ -1,4 +1,4 @@
--module(arith_parser_tests).
+-module(fulluntyped_parser_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -8,7 +8,7 @@ data() ->
 
 parser_test() ->
     Data = data(),
-    {ok, Tokens, _} = arith_lexer:string(Data),
+    {ok, Tokens, _} = fulluntyped_lexer:string(Data),
     ?assertEqual({ok,[{eval,{6,3},{true,{6,3}}},
                       {eval,
                        {7,1},
@@ -30,4 +30,4 @@ parser_test() ->
                          {succ,
                           {12,15},
                           {succ,{12,21},{zero,{12,26}}}}}}}]},
-                 arith_parser:parse(Tokens)).
+                 fulluntyped_parser:parse(Tokens)).

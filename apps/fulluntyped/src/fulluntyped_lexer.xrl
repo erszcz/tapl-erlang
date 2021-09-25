@@ -43,4 +43,4 @@ Erlang code.
 
 %% Erlang code is taken out to a separate file,
 %% as Leex special syntax breaks code indendation / syntax highlighting.
--include("arith_lexer.hrl").
+-include("fulluntyped_lexer.hrl").
