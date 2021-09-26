@@ -4,6 +4,7 @@ WS = [\s\011]
 NL = [\012]
 LCOMMENT = \/\*
 RCOMMENT = \*\/
+DQUOTE = "
 
 Rules.
 
@@ -20,6 +21,9 @@ Rules.
 {NL} :
     reset_column(),
     skip_token.
+
+{DQUOTE}[^"]+{DQUOTE} :
+    {token, {string_value, span(TokenLine, TokenChars), TokenChars}}.
 
 [0-9]+ :
     {token, {int_value, span(TokenLine, TokenChars), TokenChars}}.
