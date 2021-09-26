@@ -1,11 +1,13 @@
 -module(fulluntyped_syntax).
 
+%% Constructors
 -export(['if'/4,
          succ/2,
          pred/2,
          is_zero/2,
          eval/1]).
 
+%% Printing
 -export([format_term/1, format_term/2]).
 
 -export_type([command/0,
