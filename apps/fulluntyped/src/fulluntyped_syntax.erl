@@ -248,58 +248,132 @@ term_info(T) ->
 %%' Printing
 %%
 
+-spec small(term_()) -> boolean().
+small({var, _, _, _}) -> true;
+small(_) -> false.
+
 -spec format_term(term_()) -> string().
 format_term(T) -> format_term(T, #{}).
 
 -spec format_term(term_(), map()) -> string().
 format_term(T, Opts) ->
-    Doc = prettypr_term(true, T),
+    Doc = prettypr_term(true, empty_context(), T),
     prettypr:format(Doc,
                     maps:get(paper_width, Opts, 80),
                     maps:get(line_width, Opts, 65)).
 
--spec prettypr_term(boolean(), term_()) -> prettypr:document().
-prettypr_term(_Outer, {'if', _Info, T1, T2, T3}) ->
+-spec prettypr_term(boolean(), context(), term_()) -> prettypr:document().
+prettypr_term(_Outer, Ctx, {'if', _Info, T1, T2, T3}) ->
     prettypr:sep([
                   prettypr:par([prettypr:text("if"),
-                                prettypr_term(false, T1)], 2),
+                                prettypr_term(false, Ctx, T1)], 2),
                   prettypr:par([prettypr:text("then"),
-                                prettypr_term(false, T2)], 2),
+                                prettypr_term(false, Ctx, T2)], 2),
                   prettypr:par([prettypr:text("else"),
-                                prettypr_term(false, T3)], 2)
+                                prettypr_term(false, Ctx, T3)], 2)
                  ]);
-prettypr_term(Outer, T) ->
-    prettypr_app_term(Outer, T).
 
-prettypr_app_term(_Outer, {pred, _Info, T}) ->
+prettypr_term(Outer, Ctx, {abs, _Info, X, T2}) ->
+    {NewCtx, X2} = pick_fresh_name(Ctx, X),
+    prettypr:follow(prettypr:text(string:join(["lambda ", X2, "."], "")),
+                    prettypr_term(Outer, NewCtx, T2), 2);
+
+prettypr_term(Outer, Ctx, {let_, _Info, X, T1, T2}) ->
+    prettypr:par([prettypr:text(string:join(["let ", X, " = "], "")),
+                  prettypr:beside(prettypr_term(false, Ctx, T1),
+                                  prettypr:text("in")),
+                 prettypr_term(false, add_name(Ctx, X), T2)], 0);
+
+prettypr_term(Outer, Ctx, T) ->
+    prettypr_app_term(Outer, Ctx, T).
+
+prettypr_app_term(_Outer, Ctx, {app, _Info, T1, T2}) ->
+    prettypr:par([prettypr_app_term(false, Ctx, T1),
+                  prettypr_a_term(false, Ctx, T2)], 0);
+
+prettypr_app_term(_Outer, Ctx, {times_float, _Info, T1, T2}) ->
+    prettypr:follow(prettypr:text("timesfloat"),
+                    prettypr_a_term(false, Ctx, T1),
+                    prettypr_a_term(false, Ctx, T2));
+
+prettypr_app_term(_Outer, Ctx, {pred, _Info, T}) ->
     prettypr:follow(prettypr:text("pred"),
                     prettypr_a_term(false, T));
-prettypr_app_term(_Outer, {is_zero, _Info, T}) ->
+
+prettypr_app_term(_Outer, Ctx, {is_zero, _Info, T}) ->
     prettypr:follow(prettypr:text("iszero"),
                     prettypr_a_term(false, T));
-prettypr_app_term(Outer, T) ->
-    prettypr_a_term(Outer, T).
 
-prettypr_a_term(_Outer, {true, _}) ->
+prettypr_app_term(Outer, Ctx, T) ->
+    prettypr_path_term(Outer, Ctx, T).
+
+prettypr_path_term(_Outer, Ctx, {proj, _Info, T1, Label}) ->
+    prettypr:beside(prettypr:beside(prettypr_a_term(false, Ctx, T1), prettypr:text(".")),
+                    prettypr:text(Label));
+
+prettypr_path_term(Outer, Ctx, T) ->
+    prettypr_a_term(Outer, Ctx, T).
+
+prettypr_a_term(_Outer, Ctx, {true, _}) ->
     prettypr:text("true");
-prettypr_a_term(_Outer, {false, _}) ->
+
+prettypr_a_term(_Outer, Ctx, {false, _}) ->
     prettypr:text("false");
-prettypr_a_term(_Outer, {zero, _}) ->
+
+prettypr_a_term(_Outer, Ctx, {var, Info, X, N}) ->
+    case context_length(Ctx) of
+        N ->
+            prettypr:text(index_to_name(Info, Ctx, X));
+        _ ->
+            prettypr:text(io_lib:format("[bad index: ~p / ~p in ~p]", [X, N, Ctx]))
+    end;
+
+prettypr_a_term(_Outer, Ctx, {record, _Info, Fields}) ->
+    FieldsD = lists:join(prettypr:text(","),
+                         [ prettypr:par([prettypr:text(Label),
+                                         prettypr:text(" = "),
+                                         prettypr_term(false, Ctx, T)], 2)
+                           || {Label, T} <- Fields ]),
+    prettypr:par([prettypr:text("{")] ++ FieldsD ++ [prettypr:text("}")], 2);
+
+prettypr_a_term(_Outer, _Ctx, {float, _Info, S}) ->
+    prettypr:text(io_lib:format("~p", [S]));
+
+prettypr_a_term(_Outer, _Ctx, {string, _Info, S}) ->
+    prettypr:text(io_lib:format("~p", [S]));
+
+prettypr_a_term(_Outer, Ctx, {zero, _}) ->
     prettypr:text("0");
-prettypr_a_term(_Outer, {succ, _, T}) ->
+
+prettypr_a_term(_Outer, Ctx, {succ, _, T}) ->
     prettypr_succ(T, 1);
-prettypr_a_term(_Outer, T) ->
+
+prettypr_a_term(_Outer, Ctx, T) ->
     prettypr:beside(prettypr:beside(prettypr:text("("),
-                                    prettypr_term(false, T)),
+                                    prettypr_term(false, Ctx, T)),
                     prettypr:text(")")).
 
-prettypr_succ({zero, _}, N) ->
+prettypr_succ(_Ctx, {zero, _}, N) ->
     prettypr:text(integer_to_list(N));
-prettypr_succ({succ, _, T}, N) ->
-    prettypr_succ(T, N+1);
-prettypr_succ(T, _N) ->
+
+prettypr_succ(Ctx, {succ, _, T}, N) ->
+    prettypr_succ(Ctx, T, N+1);
+
+prettypr_succ(Ctx, T, _N) ->
     prettypr:follow(prettypr:text("(succ"),
-                    prettypr:beside(prettypr_a_term(false, T),
+                    prettypr:beside(prettypr_a_term(false, Ctx, T),
                                     prettypr:text(")")), 2).
+
+-spec format_binding(context(), binding(), _) -> string().
+format_binding(Ctx, B, Opts) ->
+    case B of
+        name_bind ->
+            "";
+        {abb_bind, T} ->
+            Doc = prettypr:follow(prettypr:text("= "), prettypr_term(true, Ctx, T)),
+            prettypr:format(Doc,
+                            maps:get(paper_width, Opts, 80),
+                            maps:get(line_width, Opts, 65))
+    end.
 
 %%. vim: foldmethod=marker foldmarker=%%',%%.
