@@ -292,17 +292,17 @@ prettypr_app_term(_Outer, Ctx, {app, _Info, T1, T2}) ->
                   prettypr_a_term(false, Ctx, T2)], 0);
 
 prettypr_app_term(_Outer, Ctx, {times_float, _Info, T1, T2}) ->
-    prettypr:follow(prettypr:text("timesfloat"),
-                    prettypr_a_term(false, Ctx, T1),
+    prettypr:follow(prettypr:follow(prettypr:text("timesfloat"),
+                                    prettypr_a_term(false, Ctx, T1)),
                     prettypr_a_term(false, Ctx, T2));
 
 prettypr_app_term(_Outer, Ctx, {pred, _Info, T}) ->
     prettypr:follow(prettypr:text("pred"),
-                    prettypr_a_term(false, T));
+                    prettypr_a_term(false, Ctx, T));
 
 prettypr_app_term(_Outer, Ctx, {is_zero, _Info, T}) ->
     prettypr:follow(prettypr:text("iszero"),
-                    prettypr_a_term(false, T));
+                    prettypr_a_term(false, Ctx, T));
 
 prettypr_app_term(Outer, Ctx, T) ->
     prettypr_path_term(Outer, Ctx, T).
@@ -314,10 +314,10 @@ prettypr_path_term(_Outer, Ctx, {proj, _Info, T1, Label}) ->
 prettypr_path_term(Outer, Ctx, T) ->
     prettypr_a_term(Outer, Ctx, T).
 
-prettypr_a_term(_Outer, Ctx, {true, _}) ->
+prettypr_a_term(_Outer, _Ctx, {true, _}) ->
     prettypr:text("true");
 
-prettypr_a_term(_Outer, Ctx, {false, _}) ->
+prettypr_a_term(_Outer, _Ctx, {false, _}) ->
     prettypr:text("false");
 
 prettypr_a_term(_Outer, Ctx, {var, Info, X, N}) ->
@@ -342,11 +342,11 @@ prettypr_a_term(_Outer, _Ctx, {float, _Info, S}) ->
 prettypr_a_term(_Outer, _Ctx, {string, _Info, S}) ->
     prettypr:text(io_lib:format("~p", [S]));
 
-prettypr_a_term(_Outer, Ctx, {zero, _}) ->
+prettypr_a_term(_Outer, _Ctx, {zero, _}) ->
     prettypr:text("0");
 
 prettypr_a_term(_Outer, Ctx, {succ, _, T}) ->
-    prettypr_succ(T, 1);
+    prettypr_succ(Ctx, T, 1);
 
 prettypr_a_term(_Outer, Ctx, T) ->
     prettypr:beside(prettypr:beside(prettypr:text("("),
@@ -364,6 +364,10 @@ prettypr_succ(Ctx, T, _N) ->
                     prettypr:beside(prettypr_a_term(false, Ctx, T),
                                     prettypr:text(")")), 2).
 
+-spec format_binding(context(), binding()) -> string().
+format_binding(Ctx, B) ->
+    format_binding(Ctx, B, #{}).
+
 -spec format_binding(context(), binding(), _) -> string().
 format_binding(Ctx, B, Opts) ->
     case B of
@@ -375,5 +379,43 @@ format_binding(Ctx, B, Opts) ->
                             maps:get(paper_width, Opts, 80),
                             maps:get(line_width, Opts, 65))
     end.
+
+%%.
+%%' Tests
+%%
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+
+format_term_test_() ->
+    [
+     ?_test(format_term( {true, 0}                                          )),
+     ?_test(format_term( {false, 0}                                         )),
+     ?_test(format_term( {'if', 0, {is_zero, 0, {zero, 0}},
+                          {zero, 0},
+                          {succ, 0, {zero, 0}}}                             )),
+     ?_test(format_term( {var, 0, 1, 1}                                     )),
+     ?_test(format_term( {abs, 0, "x", {true, 0}}                           )),
+     ?_test(format_term( {app, 0, {true, 0}, {false, 0}}                    )),
+     ?_test(format_term( {proj, 0, {true, 0}, "x"}                          )),
+     ?_test(format_term( {record, 0, [{"a", {true, 0}}]}                    )),
+     ?_test(format_term( {float, 0, 3.14}                                   )),
+     ?_test(format_term( {times_float, 0, {float, 0, 2.0}, {float, 0, 3.0}} )),
+     ?_test(format_term( {string, 0, "ala ma kota, a kot ma ale"}           )),
+     ?_test(format_term( {zero, 0}                                          )),
+     ?_test(format_term( {succ, 0, {zero, 0}}                               )),
+     ?_test(format_term( {pred, 0, {succ, 0, {zero, 0}}}                    )),
+     ?_test(format_term( {is_zero, 0, {zero, 0}}                            )),
+     ?_test(format_term( {let_, 0, "a", {true, 0}, {false, 0}}              ))
+    ].
+
+format_binding_test_() ->
+    [
+     ?_test(format_binding( empty_context(), name_bind                      )),
+     ?_test(format_binding( add_name(empty_context(), "x"),
+                            {abb_bind, {var, 0, 1, 1}}                      ))
+    ].
+
+-endif. %% TEST
 
 %%. vim: foldmethod=marker foldmarker=%%',%%.
