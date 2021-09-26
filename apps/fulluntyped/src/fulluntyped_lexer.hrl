@@ -24,7 +24,7 @@ update_column(Chars) ->
         Col ->
             Len = case string:tokens(Chars, "\n") of
                       [] -> 0;
-                      NonEmpty -> length(lists:last(NonEmpty))
+                      Lines -> length(lists:last(Lines))
                   end,
             erlang:put(col, Col + Len),
             Col
@@ -51,9 +51,13 @@ reserved_word(Chars) ->
         "else" -> 'else';
         "true" -> 'true';
         "false" -> 'false';
+        "lambda" -> 'lambda';
+        "timesfloat" -> 'timesfloat';
         "succ" -> 'succ';
         "pred" -> 'pred';
         "iszero" -> 'iszero';
+        "let" -> 'let';
+        "in" -> 'in';
 
         %% Symbols
         "_" -> uscore;
