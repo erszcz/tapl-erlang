@@ -9,7 +9,7 @@ reset() ->
     erlang:erase(col),
     ok.
 
-span(Line, Chars) ->
+loc(Line, Chars) ->
     Col = update_column(Chars),
     {Line, Col}.
 
@@ -35,12 +35,12 @@ create_id(Line, Chars) ->
         '__not_a_reserved_word__' ->
             case Chars of
                 [C | _] when C >= $A andalso C =< $Z ->
-                    {ucid, span(Line, Chars)};
+                    {ucid, loc(Line, Chars), Chars};
                 _ ->
-                    {lcid, span(Line, Chars)}
+                    {lcid, loc(Line, Chars), Chars}
             end;
         Token ->
-            {Token, span(Line, Chars)}
+            {Token, loc(Line, Chars)}
     end.
 
 reserved_word(Chars) ->

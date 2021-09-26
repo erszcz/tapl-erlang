@@ -1,14 +1,21 @@
 -module(fulluntyped_syntax).
 
 %% Constructors
--export([if_/4,
-         succ/2,
-         pred/2,
+-export([abs_/2,
+         add_name/2,
+         app/2,
+         context_length/1,
+         eval/1,
+         if_/4,
          is_zero/2,
-         eval/1]).
+         name_to_index/3,
+         pred/2,
+         succ/2]).
 
 %% Printing
 -export([format_term/1, format_term/2]).
+
+-export([term_info/1]).
 
 -export_type([command/0,
               term_/0]).
@@ -17,7 +24,7 @@
 %%' Datatypes
 %%
 
--type info() :: integer().
+-type info() :: {pos_integer(), pos_integer()}.
 
 -type term_() :: {true, info()}
                | {false, info()}
@@ -52,8 +59,20 @@
 %%
 
 -spec if_(token(), token(), token(), token()) -> term_().
-if_({if_, Info}, Cond, Then, Else) ->
+if_({'if', Info}, Cond, Then, Else) ->
     {if_, Info, Cond, Then, Else}.
+
+-spec abs_(string(), term_()) -> term_().
+abs_(X, T) ->
+    {abs, term_info(T), X, T}.
+
+-spec app(term_(), term_()) -> term_().
+app(T1, T2) ->
+    {app, term_info(T1), T1, T2}.
+
+-spec proj(token(), term_(), string()) -> term_().
+proj(Dot, T, Label) ->
+    {proj, term_info(Dot), T, Label}.
 
 -spec succ(token(), token()) -> term_().
 succ({succ, Info}, T) ->
@@ -67,9 +86,13 @@ pred({pred, Info}, T) ->
 is_zero({iszero, Info}, T) ->
     {is_zero, Info, T}.
 
--spec eval(term()) -> command().
+-spec eval(term_()) -> command().
 eval(T) ->
     {eval, term_info(T), T}.
+
+-spec bind(info(), string(), term_()) -> command().
+bind(Info, Name, T) ->
+    {bind, Info, Name, T}.
 
 %%.
 %%' Context management
@@ -123,8 +146,8 @@ index_to_name(FInfo, Ctx, I) ->
 name_to_index(FInfo, Ctx, X) ->
     case Ctx of
         [] ->
-            erlang:error({identifier_is_unbound, FInfo, X});
-        [X | _] ->
+            erlang:error({unbound_identifier, FInfo, X, Ctx});
+        [{X, _} | _] ->
             0;
         [_ | Rest] ->
             1 + name_to_index(FInfo, Rest, X)

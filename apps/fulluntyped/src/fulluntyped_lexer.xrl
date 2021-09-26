@@ -12,7 +12,7 @@ Rules.
     {error, "unmatched end of comment"}.
 
 {LCOMMENT}[^(\*\/)]+{RCOMMENT} :
-    {token, {comment, span(TokenLine, TokenChars), TokenChars}}.
+    {token, {comment, loc(TokenLine, TokenChars), TokenChars}}.
 
 {WS}+ :
     update_column(TokenChars),
@@ -23,13 +23,13 @@ Rules.
     skip_token.
 
 {DQUOTE}[^"]+{DQUOTE} :
-    {token, {string_value, span(TokenLine, TokenChars), TokenChars}}.
+    {token, {string_value, loc(TokenLine, TokenChars), TokenChars}}.
 
 [0-9]+ :
-    {token, {int_value, span(TokenLine, TokenChars), TokenChars}}.
+    {token, {int_value, loc(TokenLine, TokenChars), TokenChars}}.
 
 [0-9]+\.[0-9]+ :
-    {token, {float_value, span(TokenLine, TokenChars), TokenChars}}.
+    {token, {float_value, loc(TokenLine, TokenChars), TokenChars}}.
 
 [A-Za-z_][A-Za-z_0-9']* :
     {token, create_id(TokenLine, TokenChars)}.
