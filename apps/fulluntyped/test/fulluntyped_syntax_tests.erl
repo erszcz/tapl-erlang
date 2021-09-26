@@ -31,7 +31,7 @@ strip_info(T) ->
     case T of
         {true, _Info} -> {true, info};
         {false, _Info} -> {true, info};
-        {'if', _Info, T1, T2, T3} -> {'if', info, strip_info(T1), strip_info(T2), strip_info(T3)};
+        {if_, _Info, T1, T2, T3} -> {if_, info, strip_info(T1), strip_info(T2), strip_info(T3)};
         {zero, _Info} -> {zero, info};
         {succ, _Info, T1} -> {succ, info, strip_info(T1)};
         {pred, _Info, T1} -> {pred, info, strip_info(T1)};

@@ -1,7 +1,7 @@
 -module(fulluntyped_syntax).
 
 %% Constructors
--export(['if'/4,
+-export([if_/4,
          succ/2,
          pred/2,
          is_zero/2,
@@ -21,7 +21,7 @@
 
 -type term_() :: {true, info()}
                | {false, info()}
-               | {'if', info(), term_(), term_(), term_()}
+               | {if_, info(), term_(), term_(), term_()}
                | {var, info(), integer(), integer()}
                | {abs, info(), string(), term_()}
                | {app, info(), term_(), term_()}
@@ -51,9 +51,9 @@
 %%' Constructors
 %%
 
--spec 'if'(token(), token(), token(), token()) -> term_().
-'if'({'if', Info}, Cond, Then, Else) ->
-    {'if', Info, Cond, Then, Else}.
+-spec if_(token(), token(), token(), token()) -> term_().
+if_({if_, Info}, Cond, Then, Else) ->
+    {if_, Info, Cond, Then, Else}.
 
 -spec succ(token(), token()) -> term_().
 succ({succ, Info}, T) ->
@@ -147,8 +147,8 @@ walk(OnVarF, C, T) ->
             T;
         {false, _} ->
             T;
-        {'if', FInfo, T1, T2, T3} ->
-            {'if', FInfo, walk(OnVarF, C, T1), walk(OnVarF, C, T2), walk(OnVarF, C, T3)};
+        {if_, FInfo, T1, T2, T3} ->
+            {if_, FInfo, walk(OnVarF, C, T1), walk(OnVarF, C, T2), walk(OnVarF, C, T3)};
         {var, FInfo, X, N} ->
             OnVarF(FInfo, C, X, N);
         {abs, FInfo, X, T2} ->
@@ -230,7 +230,7 @@ term_info(T) ->
     case T of
         {true, Info} -> Info;
         {false, Info} -> Info;
-        {'if', Info, _, _, _} -> Info;
+        {if_, Info, _, _, _} -> Info;
         {var, Info, _, _} -> Info;
         {abs, Info, _, _} -> Info;
         {app, Info, _, _} -> Info;
@@ -265,7 +265,7 @@ format_term(T, Opts) ->
                     maps:get(line_width, Opts, 65)).
 
 -spec prettypr_term(boolean(), context(), term_()) -> prettypr:document().
-prettypr_term(_Outer, Ctx, {'if', _Info, T1, T2, T3}) ->
+prettypr_term(_Outer, Ctx, {if_, _Info, T1, T2, T3}) ->
     prettypr:sep([
                   prettypr:par([prettypr:text("if"),
                                 prettypr_term(false, Ctx, T1)], 2),
@@ -393,7 +393,7 @@ format_term_test_() ->
     [
      ?_test(format_term( {true, 0}                                          )),
      ?_test(format_term( {false, 0}                                         )),
-     ?_test(format_term( {'if', 0, {is_zero, 0, {zero, 0}},
+     ?_test(format_term( {if_, 0, {is_zero, 0, {zero, 0}},
                           {zero, 0},
                           {succ, 0, {zero, 0}}}                             )),
      ?_test(format_term( {var, 0, 1, 1}                                     )),
