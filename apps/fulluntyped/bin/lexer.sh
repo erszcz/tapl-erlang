@@ -14,5 +14,4 @@ io:format("~p\\\\n", [Lexed]), \
 halt().
 EOF
 
-erl -pa _build/default/lib/fulluntyped/ebin -noinput -noshell \
-  -eval "$CODE"
+erl -pa _build/default/lib/fulluntyped/ebin -noinput -noshell -eval "$CODE"
