@@ -6,7 +6,8 @@ echo $1 >/dev/null
 INPUT=$1
 
 read CODE << EOF
-Data = unicode:characters_to_list(element(2, file:read_file("$INPUT"))), \
+Input = "$INPUT", \
+Data = unicode:characters_to_list(element(2, file:read_file(Input))), \
 fulluntyped_lexer:reset(), \
 Lexed = fulluntyped_lexer:string(Data), \
 io:format("~p\\\\n", [Lexed]), \
