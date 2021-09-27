@@ -1,16 +1,15 @@
 -module(fulluntyped_syntax).
 
 %% Constructors
--export([abs_/2,
-         add_name/2,
-         app/2,
+-export([binding/1,
+         command/1,
+         info/1,
+         term_/1]).
+
+%% Context management
+-export([add_name/2,
          context_length/1,
-         eval/1,
-         if_/4,
-         is_zero/2,
-         name_to_index/3,
-         pred/2,
-         succ/2]).
+         name_to_index/3]).
 
 %% Printing
 -export([format_term/1, format_term/2]).
@@ -25,6 +24,9 @@
 %%
 
 -type info() :: {pos_integer(), pos_integer()}.
+
+-type token() :: {atom(), info()}
+               | {atom(), info(), string()}.
 
 -type term_() :: {true, info()}
                | {false, info()}
@@ -49,8 +51,6 @@
 
 -type context() :: [{string(), binding()}].
 
--type token() :: any().
-
 -type command() :: {eval, info(), term()}
                  | {bind, info(), string(), binding()}.
 
@@ -58,41 +58,48 @@
 %%' Constructors
 %%
 
--spec if_(token(), token(), token(), token()) -> term_().
-if_({'if', Info}, Cond, Then, Else) ->
-    {if_, Info, Cond, Then, Else}.
+-spec info(token()) -> info().
+info({_, Info}) -> Info;
+info({_, Info, _Chars}) -> Info.
 
--spec abs_(string(), term_()) -> term_().
-abs_(X, T) ->
-    {abs, term_info(T), X, T}.
+%% This function might seem useless, since it "doesn't do anything",
+%% but in fact it gives us two guarantees:
+%% - thanks to Gradualizer it provides compile-time warnings if we build an invalid term_()
+%% - at runtime, it crashes if we try to build an invalid term_()
+-spec term_(term_()) -> term_().
+term_(T) ->
+    case T of
+        {true, _} -> T;
+        {false, _} -> T;
+        {if_, _, _, _, _} -> T;
+        {var, _, _, _} -> T;
+        {abs, _, _, _} -> T;
+        {app, _, _, _} -> T;
+        {proj, _, _, _} -> T;
+        {record, _, _} -> T;
+        {float, _, _} -> T;
+        {timesfloat, _, _, _} -> T;
+        {string, _, _} -> T;
+        {zero, _} -> T;
+        {succ, _, _} -> T;
+        {pred, _, _} -> T;
+        {is_zero, _, _} -> T;
+        {let_, _, _, _, _} -> T
+    end.
 
--spec app(term_(), term_()) -> term_().
-app(T1, T2) ->
-    {app, term_info(T1), T1, T2}.
+-spec binding(binding()) -> binding().
+binding(B) ->
+    case B of
+        name_bind -> B;
+        {abb_bind, _} -> B
+    end.
 
--spec proj(token(), term_(), string()) -> term_().
-proj(Dot, T, Label) ->
-    {proj, term_info(Dot), T, Label}.
-
--spec succ(token(), token()) -> term_().
-succ({succ, Info}, T) ->
-    {succ, Info, T}.
-
--spec pred(token(), token()) -> term_().
-pred({pred, Info}, T) ->
-    {pred, Info, T}.
-
--spec is_zero(token(), token()) -> term_().
-is_zero({iszero, Info}, T) ->
-    {is_zero, Info, T}.
-
--spec eval(term_()) -> command().
-eval(T) ->
-    {eval, term_info(T), T}.
-
--spec bind(info(), string(), binding()) -> command().
-bind(Info, Name, T) ->
-    {bind, Info, Name, T}.
+-spec command(command()) -> command().
+command(C) ->
+    case C of
+        {eval, _, _} -> C;
+        {bind, _, _, _} -> C
+    end.
 
 %%.
 %%' Context management
