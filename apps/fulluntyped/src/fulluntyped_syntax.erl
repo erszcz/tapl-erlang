@@ -9,6 +9,7 @@
 %% Context management
 -export([add_name/2,
          context_length/1,
+         get_binding/3,
          name_to_index/3]).
 
 %% Printing
@@ -18,6 +19,8 @@
 
 -export_type([command/0,
               term_/0]).
+
+-include_lib("gradualizer/include/gradualizer.hrl").
 
 %%
 %%' Datatypes
@@ -31,7 +34,7 @@
 -type term_() :: {true, info()}
                | {false, info()}
                | {if_, info(), term_(), term_(), term_()}
-               | {var, info(), integer(), integer()}
+               | {var, info(), pos_integer(), non_neg_integer()}
                | {abs, info(), string(), term_()}
                | {app, info(), term_(), term_()}
                | {proj, info(), term_(), string()}
@@ -155,7 +158,7 @@ name_to_index(FInfo, Ctx, X) ->
         [] ->
             erlang:error({unbound_identifier, FInfo, X, Ctx});
         [{X, _} | _] ->
-            0;
+            1;
         [_ | Rest] ->
             1 + name_to_index(FInfo, Rest, X)
     end.
@@ -242,13 +245,14 @@ term_subst_top(S, T) ->
 %%' Context management (continued)
 %%
 
+-spec get_binding(info(), context(), pos_integer()) -> binding().
 get_binding(FInfo, Ctx, I) ->
-    try
-        {_, Bind} = lists:nth(I, Ctx),
-        binding_shift(I+1, Bind)
-    catch
-        error:function_clause ->
-            erlang:error({variable_lookup_failure, FInfo, I, context_length(Ctx)}, [FInfo, Ctx, I])
+    case Ctx of
+        [] ->
+            erlang:error({variable_lookup_failure, FInfo, I, context_length(Ctx)}, [FInfo, Ctx, I]);
+        [_|_] ->
+            {_, Bind} = lists:nth(I, ?assert_type(Ctx, [T, ...])),
+            binding_shift(I+1, Bind)
     end.
 
 %%.
