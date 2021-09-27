@@ -35,7 +35,7 @@
                | {proj, info(), term_(), string()}
                | {record, info(), [{string(), term_()}]}
                | {float, info(), float()}
-               | {times_float, info(), term_(), term_()}
+               | {timesfloat, info(), term_(), term_()}
                | {string, info(), string()}
                | {zero, info()}
                | {succ, info(), term_()}
@@ -90,7 +90,7 @@ is_zero({iszero, Info}, T) ->
 eval(T) ->
     {eval, term_info(T), T}.
 
--spec bind(info(), string(), term_()) -> command().
+-spec bind(info(), string(), binding()) -> command().
 bind(Info, Name, T) ->
     {bind, Info, Name, T}.
 
@@ -184,8 +184,8 @@ walk(OnVarF, C, T) ->
             {record, FInfo, [ {Label, walk(OnVarF, C, FieldT)} || {Label, FieldT} <- Fields ]};
         {float, _, _} ->
             T;
-        {times_float, FInfo, T1, T2} ->
-            {times_float, FInfo, walk(OnVarF, C, T1), walk(OnVarF, C, T2)};
+        {timesfloat, FInfo, T1, T2} ->
+            {timesfloat, FInfo, walk(OnVarF, C, T1), walk(OnVarF, C, T2)};
         {string, _, _} ->
             T;
         {zero, _} ->
@@ -260,7 +260,7 @@ term_info(T) ->
         {proj, Info, _, _} -> Info;
         {record, Info, _} -> Info;
         {float, Info, _} -> Info;
-        {times_float, Info, _, _} -> Info;
+        {timesfloat, Info, _, _} -> Info;
         {string, Info, _} -> Info;
         {zero, Info} -> Info;
         {succ, Info, _} -> Info;

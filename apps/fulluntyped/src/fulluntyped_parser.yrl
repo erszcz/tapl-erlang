@@ -4,7 +4,7 @@ Nonterminals
 Terminals
     if then else true false lambda timesfloat succ pred iszero let in
     ucid lcid int_value float_value string_value
-    comment dot eq lparen rparen semi slash.
+    comment dot eq lparen rparen semi slash uscore.
 
 Rootsymbol Top.
 
@@ -32,21 +32,31 @@ Term -> lambda lcid dot Term        : fun (Ctx) ->
                                             NewCtx = add_name(Ctx, string_value('$2')),
                                             abs_(string_value('$2'), '$4'(NewCtx))
                                       end.
-%% TODO:
-%% - lambda _
-%% - let ... in ...
-%% - let _ in ...
+Term -> lambda uscore dot Term      : fun (Ctx) ->
+                                            NewCtx = add_name(Ctx, "_"),
+                                            abs_("_", '$4'(NewCtx))
+                                      end.
+Term -> let lcid eq Term in Term    : fun (Ctx) ->
+                                            X = string_value('$2'),
+                                            {let_, info('$1'), X, '$4'(Ctx), '$6'(add_name(Ctx, X))}
+                                      end.
+Term -> let uscore eq Term in Term  : fun (Ctx) ->
+                                            X = "_",
+                                            {let_, info('$1'), X, '$4'(Ctx), '$6'(add_name(Ctx, X))}
+                                      end.
 
-AppTerm -> PathTerm         : '$1'.
-AppTerm -> AppTerm PathTerm : fun (Ctx) ->
-                                      T1 = '$1'(Ctx),
-                                      T2 = '$2'(Ctx),
-                                      app(T1, T2)
-                              end.
-%% TODO: timesfloat
-AppTerm -> succ PathTerm    : fun (Ctx) -> succ('$1', '$2'(Ctx)) end.
-AppTerm -> pred PathTerm    : fun (Ctx) -> pred('$1', '$2'(Ctx)) end.
-AppTerm -> iszero PathTerm  : fun (Ctx) -> is_zero('$1', '$2'(Ctx)) end.
+AppTerm -> PathTerm                     : '$1'.
+AppTerm -> AppTerm PathTerm             : fun (Ctx) ->
+                                                  T1 = '$1'(Ctx),
+                                                  T2 = '$2'(Ctx),
+                                                  app(T1, T2)
+                                          end.
+AppTerm -> timesfloat PathTerm PathTerm : fun (Ctx) ->
+                                                  {timesfloat, info('$1'), '$2'(Ctx), '$3'(Ctx)}
+                                          end.
+AppTerm -> succ PathTerm                : fun (Ctx) -> succ('$1', '$2'(Ctx)) end.
+AppTerm -> pred PathTerm                : fun (Ctx) -> pred('$1', '$2'(Ctx)) end.
+AppTerm -> iszero PathTerm              : fun (Ctx) -> is_zero('$1', '$2'(Ctx)) end.
 
 PathTerm -> PathTerm dot lcid       : fun (Ctx) ->
                                             proj('$2', '$1'(Ctx), string_value('$3'))
@@ -64,6 +74,7 @@ ATerm -> lcid               : fun (Ctx) ->
                                     Index = name_to_index(info('$1'), Ctx, string_value('$1')),
                                     {var, info('$1'), Index, context_length(Ctx)}
                               end.
+ATerm -> float_value        : fun (Ctx) -> {float, info('$1'), float_value('$1')} end.
 %% TODO:
 %% - lcurly Fields rcurly
 %% - float_value
@@ -92,8 +103,9 @@ int_value({int_value, Info, S}) when is_list(S) -> int_value(list_to_integer(S),
 int_value(0, Info) -> {zero, Info};
 int_value(N, Info) when N > 0 -> fulluntyped_syntax:succ({succ, Info}, int_value(N - 1, Info)).
 
-info({true, Info}) -> Info;
-info({false, Info}) -> Info;
-info({lcid, Info, _Chars}) -> Info.
+float_value({float_value, _Info, Chars}) -> list_to_float(Chars).
 
 string_value({lcid, _Info, Chars}) -> Chars.
+
+info({_, Info}) -> Info;
+info({_, Info, _Chars}) -> Info.
