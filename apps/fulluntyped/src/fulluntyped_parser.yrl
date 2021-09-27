@@ -1,10 +1,10 @@
 Nonterminals
-    Top Command Binder Term AppTerm PathTerm ATerm.
+    Top Command Binder Term AppTerm PathTerm ATerm Fields Field.
 
 Terminals
     if then else true false lambda timesfloat succ pred iszero let in
     ucid lcid int_value float_value string_value
-    comment dot eq lparen rparen semi slash uscore.
+    comma comment dot eq lcurly lparen rcurly rparen semi slash uscore.
 
 Rootsymbol Top.
 
@@ -59,29 +59,33 @@ AppTerm -> pred PathTerm                : fun (Ctx) -> pred('$1', '$2'(Ctx)) end
 AppTerm -> iszero PathTerm              : fun (Ctx) -> is_zero('$1', '$2'(Ctx)) end.
 
 PathTerm -> PathTerm dot lcid       : fun (Ctx) ->
-                                            proj('$2', '$1'(Ctx), string_value('$3'))
+                                            {proj, info('$2'), '$1'(Ctx), string_value('$3')}
                                       end.
 PathTerm -> PathTerm dot int_value  : fun (Ctx) ->
-                                            proj('$2', '$1'(Ctx), integer_to_list(int_value('$3')))
+                                            {proj, info('$2'), '$1'(Ctx),
+                                             integer_to_list(int_value('$3'))}
                                       end.
 PathTerm -> ATerm                   : '$1'.
 
 %% Atomic terms are ones that never require extra parentheses
-ATerm -> lparen Term rparen : '$2'.
-ATerm -> true               : fun (_Ctx) -> {true, info('$1')} end.
-ATerm -> false              : fun (_Ctx) -> {false, info('$1')} end.
-ATerm -> lcid               : fun (Ctx) ->
-                                    Index = name_to_index(info('$1'), Ctx, string_value('$1')),
-                                    {var, info('$1'), Index, context_length(Ctx)}
-                              end.
-ATerm -> float_value        : fun (Ctx) -> {float, info('$1'), float_value('$1')} end.
-%% TODO:
-%% - lcurly Fields rcurly
-%% - float_value
-%% - string_value
-ATerm -> int_value          : fun (_Ctx) -> int_value('$1') end.
+ATerm -> lparen Term rparen     : '$2'.
+ATerm -> true                   : fun (_Ctx) -> {true, info('$1')} end.
+ATerm -> false                  : fun (_Ctx) -> {false, info('$1')} end.
+ATerm -> lcid                   : fun (Ctx) ->
+                                        Index = name_to_index(info('$1'), Ctx, string_value('$1')),
+                                        {var, info('$1'), Index, context_length(Ctx)}
+                                  end.
+ATerm -> lcurly rcurly          : fun (Ctx) -> {record, info('$1'), []} end.
+ATerm -> lcurly Fields rcurly   : fun (Ctx) -> {record, info('$1'), '$2'(Ctx, 1)} end.
+ATerm -> float_value            : fun (Ctx) -> {float, info('$1'), float_value('$1')} end.
+ATerm -> string_value           : fun (Ctx) -> {string, info('$1'), string_value('$1')} end.
+ATerm -> int_value              : fun (_Ctx) -> int_value('$1') end.
 
-%% TODO: Fields
+Fields -> Field                 : fun (Ctx, I) -> ['$1'(Ctx, I)] end.
+Fields -> Field comma Fields    : fun (Ctx, I) -> ['$1'(Ctx, I) | '$3'(Ctx, I+1)] end.
+
+Field -> lcid eq Term   : fun (Ctx, I) -> {string_value('$1'), '$3'(Ctx)} end.
+Field -> Term           : fun (Ctx, I) -> {integer_to_list(I), '$1'(Ctx)} end.
 
 Erlang code.
 
@@ -105,7 +109,8 @@ int_value(N, Info) when N > 0 -> fulluntyped_syntax:succ({succ, Info}, int_value
 
 float_value({float_value, _Info, Chars}) -> list_to_float(Chars).
 
-string_value({lcid, _Info, Chars}) -> Chars.
+string_value({lcid, _Info, Chars}) -> Chars;
+string_value({string_value, _Info, Chars}) -> string:trim(Chars, both, [$"]).
 
 info({_, Info}) -> Info;
 info({_, Info, _Chars}) -> Info.
