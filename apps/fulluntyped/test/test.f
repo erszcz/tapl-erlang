@@ -12,6 +12,7 @@ if x then false else x;
 
 lambda x. x;
 (lambda x. x) (lambda x. x x); 
+lambda _. true;
 
 {x=lambda x.x, y=(lambda x.x)(lambda x.x)}; 
 {x=lambda x.x, y=(lambda x.x)(lambda x.x)}.x; 
@@ -25,3 +26,4 @@ succ (pred 0);
 iszero (pred (succ (succ 0))); 
 
 let x=true in x;
+let _=true in false;
