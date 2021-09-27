@@ -12,12 +12,17 @@
          get_binding/3,
          name_to_index/3]).
 
+%% Substitution
+-export([term_subst_top/2]).
+
 %% Printing
 -export([format_term/1, format_term/2]).
 
 -export([term_info/1]).
 
--export_type([command/0,
+-export_type([binding/0,
+              context/0,
+              command/0,
               term_/0]).
 
 -include_lib("gradualizer/include/gradualizer.hrl").
