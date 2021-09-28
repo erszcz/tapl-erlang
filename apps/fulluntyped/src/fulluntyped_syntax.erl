@@ -18,7 +18,7 @@
 -export([term_subst_top/2]).
 
 %% Printing
--export([format_term/1, format_term/2,
+-export([format_term/2, format_term/3,
          format_binding/2, format_binding/3]).
 
 -export([term_info/1]).
@@ -145,8 +145,12 @@ pick_fresh_name(Ctx, X) ->
         false ->
             {add_name(Ctx, X), X};
         {X, _} ->
-            {match, AlNum, Seq} = re:run(X, "([a-zA-Z]+)([0-9]+)", [{capture, all_but_first, list}]),
-            X1 = AlNum ++ list_to_integer(integer_to_list(Seq) + 1),
+            X1 = case re:run(X, "([a-zA-Z]+)([0-9]+)", [{capture, all_but_first, list}]) of
+                     {match, AlNum, Seq} ->
+                         AlNum ++ list_to_integer(integer_to_list(Seq) + 1);
+                     nomatch ->
+                         X ++ "1"
+                 end,
             {add_name(Ctx, X1), X1}
     end.
 
@@ -296,12 +300,12 @@ term_info(T) ->
 small({var, _, _, _}) -> true;
 small(_) -> false.
 
--spec format_term(term_()) -> string().
-format_term(T) -> format_term(T, #{}).
+-spec format_term(context(), term_()) -> string().
+format_term(Ctx, T) -> format_term(Ctx, T, #{}).
 
--spec format_term(term_(), map()) -> string().
-format_term(T, Opts) ->
-    Doc = prettypr_term(true, empty_context(), T),
+-spec format_term(context(), term_(), map()) -> string().
+format_term(Ctx, T, Opts) ->
+    Doc = prettypr_term(true, Ctx, T),
     prettypr:format(Doc,
                     maps:get(paper_width, Opts, 80),
                     maps:get(line_width, Opts, 65)).
@@ -418,7 +422,7 @@ format_binding(Ctx, B, Opts) ->
         name_bind ->
             "";
         {abb_bind, T} ->
-            Doc = prettypr:follow(prettypr:text("= "), prettypr_term(true, Ctx, T)),
+            Doc = prettypr:beside(prettypr:text("= "), prettypr_term(true, Ctx, T)),
             prettypr:format(Doc,
                             maps:get(paper_width, Opts, 80),
                             maps:get(line_width, Opts, 65))
