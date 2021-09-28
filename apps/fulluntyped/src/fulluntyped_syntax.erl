@@ -167,8 +167,8 @@ name_to_index(FInfo, Ctx, X) ->
             erlang:error({unbound_identifier, FInfo, X, Ctx});
         [{X, _} | _] ->
             1;
-        [_ | Rest] ->
-            1 + name_to_index(FInfo, Rest, X)
+        [_ | CtxRest] ->
+            1 + name_to_index(FInfo, CtxRest, X)
     end.
 
 %%.
@@ -418,7 +418,7 @@ format_binding(Ctx, B, Opts) ->
         name_bind ->
             "";
         {abb_bind, T} ->
-            Doc = prettypr:follow(prettypr:text("= "), prettypr_term(true, Ctx, T)),
+            Doc = prettypr:beside(prettypr:text("= "), prettypr_term(true, Ctx, T)),
             prettypr:format(Doc,
                             maps:get(paper_width, Opts, 80),
                             maps:get(line_width, Opts, 65))
