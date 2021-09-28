@@ -7,8 +7,10 @@
          term_/1]).
 
 %% Context management
--export([add_name/2,
+-export([add_binding/3,
+         add_name/2,
          context_length/1,
+         empty_context/0,
          get_binding/3,
          name_to_index/3]).
 
@@ -16,7 +18,8 @@
 -export([term_subst_top/2]).
 
 %% Printing
--export([format_term/1, format_term/2]).
+-export([format_term/1, format_term/2,
+         format_binding/2, format_binding/3]).
 
 -export([term_info/1]).
 

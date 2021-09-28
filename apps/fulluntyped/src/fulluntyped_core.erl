@@ -2,20 +2,32 @@
 %% See https://www.cis.upenn.edu/~bcpierce/tapl/ for the book.
 -module(fulluntyped_core).
 
--export([eval/1,
+-export([eval/2,
+         eval_binding/2,
          trace/0]).
 
+-type binding() :: fulluntyped_syntax:binding().
 -type context() :: fulluntyped_syntax:context().
 -type term_() :: fulluntyped_syntax:term_().
 
 -define(syntax, fulluntyped_syntax).
 
--spec eval(term_()) -> term_().
-eval(T) ->
+-spec eval(context(), term_()) -> term_().
+eval(Ctx, T) ->
     try
-        eval(eval1([], T))
+        eval(Ctx, eval1(Ctx, T))
     catch throw:constant ->
         T
+    end.
+
+-spec eval_binding(context(), binding()) -> binding().
+eval_binding(Ctx, B) ->
+    case B of
+        {abb_bind, T} ->
+            T_ = eval(Ctx, T),
+            {abb_bind, T_};
+        name_bind ->
+            name_bind
     end.
 
 -spec eval1(context(), term_()) -> term_().
