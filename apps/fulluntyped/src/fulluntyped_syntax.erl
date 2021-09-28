@@ -18,7 +18,7 @@
 -export([term_subst_top/2]).
 
 %% Printing
--export([format_term/1, format_term/2,
+-export([format_term/2, format_term/3,
          format_binding/2, format_binding/3]).
 
 -export([term_info/1]).
@@ -296,11 +296,11 @@ term_info(T) ->
 small({var, _, _, _}) -> true;
 small(_) -> false.
 
--spec format_term(term_()) -> string().
-format_term(T) -> format_term(T, #{}).
+-spec format_term(context(), term_()) -> string().
+format_term(Ctx, T) -> format_term(Ctx, T, #{}).
 
--spec format_term(term_(), map()) -> string().
-format_term(T, Opts) ->
+-spec format_term(context(), term_(), map()) -> string().
+format_term(Ctx, T, Opts) ->
     Doc = prettypr_term(true, empty_context(), T),
     prettypr:format(Doc,
                     maps:get(paper_width, Opts, 80),
