@@ -16,7 +16,7 @@
 eval(Ctx, T) ->
     try
         eval(Ctx, eval1(Ctx, T))
-    catch throw:constant ->
+    catch throw:no_rule_applies ->
         T
     end.
 
@@ -107,7 +107,9 @@ eval1(Ctx, T) ->
                 false ->
                     T1_ = eval1(Ctx, T1),
                     {let_, Info, X, T1_, T2}
-            end
+            end;
+        _ ->
+            throw(no_rule_applies)
     end.
 
 -spec eval_fields(context(), [{string(), term_()}]) -> [{string(), term_()}].
