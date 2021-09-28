@@ -227,7 +227,7 @@ term_shift_above(D, C, T) ->
 
 -spec term_shift(_, term_()) -> term_().
 term_shift(D, T) ->
-    term_shift_above(D, 0, T).
+    term_shift_above(D, 1, T).
 
 -spec binding_shift(_, binding()) -> binding().
 binding_shift(D, Bind) ->
@@ -244,7 +244,7 @@ term_subst(J, S, T) ->
     term_map(fun
                  (_FInfo, C, X, _) when X == J + C -> term_shift(C, S);
                  ( FInfo, _, X, N) -> {var, FInfo, X, N}
-             end, 0, T).
+             end, 1, T).
 
 term_subst_top(S, T) ->
     term_shift(-1, term_subst(0, term_shift(1, S), T)).
