@@ -132,13 +132,6 @@ add_binding(Ctx, X, Bind) ->
 add_name(Ctx, X) ->
     add_binding(Ctx, X, name_bind).
 
--spec is_name_bound(context(), _) -> boolean().
-is_name_bound(Ctx, X) ->
-    case lists:keyfind(X, 1, Ctx) of
-        {X, _} -> true;
-        false -> false
-    end.
-
 -spec pick_fresh_name(context(), string()) -> {context(), string()}.
 pick_fresh_name(Ctx, X) ->
     case lists:keyfind(X, 1, Ctx) of
@@ -322,7 +315,9 @@ prettypr_term(_Outer, Ctx, {if_, _Info, T1, T2, T3}) ->
                  ]);
 
 prettypr_term(Outer, Ctx, {abs, _Info, X, T2}) ->
+    %io:format("pre pick ctx: ~p\n", [Ctx]),
     {NewCtx, X2} = pick_fresh_name(Ctx, X),
+    %io:format("post pick ctx: ~p\n", [NewCtx]),
     prettypr:follow(prettypr:text(string:join(["lambda ", X2, "."], "")),
                     prettypr_term(Outer, NewCtx, T2), 2);
 
@@ -368,7 +363,8 @@ prettypr_a_term(_Outer, _Ctx, {true, _}) ->
 prettypr_a_term(_Outer, _Ctx, {false, _}) ->
     prettypr:text("false");
 
-prettypr_a_term(_Outer, Ctx, {var, Info, X, N}) ->
+prettypr_a_term(_Outer, Ctx, {var, Info, X, N} = V) ->
+    %io:format("print ~p ~p\n", [Ctx, V]),
     case context_length(Ctx) of
         N ->
             prettypr:text(index_to_name(Info, Ctx, X));

@@ -14,6 +14,7 @@
 
 -spec eval(context(), term_()) -> term_().
 eval(Ctx, T) ->
+    %io:format("~p ~p\n", [Ctx, T]),
     try
         eval(Ctx, eval1(Ctx, T))
     catch throw:no_rule_applies ->
@@ -22,6 +23,7 @@ eval(Ctx, T) ->
 
 -spec eval_binding(context(), binding()) -> binding().
 eval_binding(Ctx, B) ->
+    %io:format("~p ~p\n", [Ctx, B]),
     case B of
         {abb_bind, T} ->
             T_ = eval(Ctx, T),
