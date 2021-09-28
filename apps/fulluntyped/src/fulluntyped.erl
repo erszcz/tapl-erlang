@@ -41,9 +41,9 @@ process_commands(Ctx, Commands) ->
 -spec process_command(command(), context()) -> context().
 process_command(Command, Ctx) ->
     case Command of
-        {eval, _Info, Term} ->
-            Result = fulluntyped_core:eval(Ctx, Term),
-            io:format("~ts\n", [?syntax:format_term(Result)]),
+        {eval, _Info, T} ->
+            T_ = fulluntyped_core:eval(Ctx, T),
+            io:format("~ts\n", [?syntax:format_term(Ctx, T_)]),
             Ctx;
         {bind, _Info, X, Bind} ->
             Bind_ = fulluntyped_core:eval_binding(Ctx, Bind),

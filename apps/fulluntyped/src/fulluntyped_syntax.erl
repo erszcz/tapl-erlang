@@ -145,8 +145,12 @@ pick_fresh_name(Ctx, X) ->
         false ->
             {add_name(Ctx, X), X};
         {X, _} ->
-            {match, AlNum, Seq} = re:run(X, "([a-zA-Z]+)([0-9]+)", [{capture, all_but_first, list}]),
-            X1 = AlNum ++ list_to_integer(integer_to_list(Seq) + 1),
+            X1 = case re:run(X, "([a-zA-Z]+)([0-9]+)", [{capture, all_but_first, list}]) of
+                     {match, AlNum, Seq} ->
+                         AlNum ++ list_to_integer(integer_to_list(Seq) + 1);
+                     nomatch ->
+                         X ++ "1"
+                 end,
             {add_name(Ctx, X1), X1}
     end.
 
@@ -301,7 +305,7 @@ format_term(Ctx, T) -> format_term(Ctx, T, #{}).
 
 -spec format_term(context(), term_(), map()) -> string().
 format_term(Ctx, T, Opts) ->
-    Doc = prettypr_term(true, empty_context(), T),
+    Doc = prettypr_term(true, Ctx, T),
     prettypr:format(Doc,
                     maps:get(paper_width, Opts, 80),
                     maps:get(line_width, Opts, 65)).
