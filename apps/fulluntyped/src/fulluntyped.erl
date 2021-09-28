@@ -47,6 +47,6 @@ process_command(Command, Ctx) ->
             Ctx;
         {bind, _Info, X, Bind} ->
             Bind_ = fulluntyped_core:eval_binding(Ctx, Bind),
-            io:format("~ts\n", [?syntax:format_binding(Ctx, Bind_)]),
+            io:format("~ts ~ts\n", [X, ?syntax:format_binding(Ctx, Bind_)]),
             ?syntax:add_binding(Ctx, X, Bind_)
     end.
