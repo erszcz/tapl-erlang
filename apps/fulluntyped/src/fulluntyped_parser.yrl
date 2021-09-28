@@ -113,7 +113,7 @@ Erlang code.
 int_value({int_value, Info, S}) when is_list(S) -> int_value(list_to_integer(S), Info).
 
 int_value(0, Info) -> {zero, Info};
-int_value(N, Info) when N > 0 -> fulluntyped_syntax:succ({succ, Info}, int_value(N - 1, Info)).
+int_value(N, Info) when N > 0 -> term_({succ, Info, int_value(N - 1, Info)}).
 
 float_value({float_value, _Info, Chars}) -> list_to_float(Chars).
 
