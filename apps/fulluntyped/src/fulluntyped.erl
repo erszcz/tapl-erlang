@@ -18,6 +18,12 @@ main([]) ->
     usage(escript:script_name()),
     erlang:halt(1);
 main([Source]) ->
+    dbg:tracer(process, {fun (Trace, ok) -> io:format("~p\n", [Trace]) end, ok}),
+    dbg:p(all, call),
+    dbg:tpl(?syntax, name_to_index, x),
+    dbg:tpl(?syntax, get_binding, x),
+    dbg:tpl(?MODULE, process_command, x),
+
     process_file(Source, ?syntax:empty_context()).
 
 process_file(Source, Ctx) ->
