@@ -383,7 +383,7 @@ prettypr_a_term(_Outer, Ctx, {var, Info, X, N}) ->
 prettypr_a_term(_Outer, Ctx, {record, _Info, Fields}) ->
     FieldsD = lists:join(prettypr:text(","),
                          [ prettypr:par([prettypr:text(Label),
-                                         prettypr:text(" = "),
+                                         prettypr:text("="),
                                          prettypr_term(false, Ctx, T)], 2)
                            || {Label, T} <- Fields ]),
     prettypr:par([prettypr:text("{")] ++ FieldsD ++ [prettypr:text("}")], 2);
