@@ -34,6 +34,17 @@
 %%' Datatypes
 %%
 
+-type ty() :: {var, integer(), integer()}
+            | {id, string()}
+            | {arr, ty(), ty()}
+            | unit
+            | {record, [{string(), ty()}]}
+            | {variant, [{string(), ty()}]}
+            | bool
+            | string
+            | float
+            | nat.
+
 -type info() :: {pos_integer(), pos_integer()}.
 
 -type token() :: {atom(), info()}
@@ -42,23 +53,33 @@
 -type term_() :: {true, info()}
                | {false, info()}
                | {if_, info(), term_(), term_(), term_()}
+               | {case_, info(), term_(), [{string(), {string(), term_()}}]}
+               | {tag, info(), string(), term_(), ty()}
                | {var, info(), pos_integer(), non_neg_integer()}
-               | {abs, info(), string(), term_()}
+               | {abs, info(), string(), ty(), term_()}
                | {app, info(), term_(), term_()}
+               | {let_, info(), string(), term_(), term_()}
+               | {fix, info(), term_()}
+               | {string, info(), string()}
+               | {unit, info()}
+               | {ascribe, info(), term_(), ty()}
                | {proj, info(), term_(), string()}
                | {record, info(), [{string(), term_()}]}
                | {float, info(), float()}
                | {timesfloat, info(), term_(), term_()}
-               | {string, info(), string()}
                | {zero, info()}
                | {succ, info(), term_()}
                | {pred, info(), term_()}
                | {is_zero, info(), term_()}
-               | {let_, info(), string(), term_(), term_()}.
+               | {inert, info(), ty()}.
 %% TAPL `term' type, but `term()' is a builtin type in Erlang,
 %% hence the name `term_()'.
 
--type binding() :: name_bind | {abb_bind, term_()}.
+-type binding() :: name_bind
+                 | ty_var_bind
+                 | {var_bind, ty()}
+                 | {tm_abb_bind, term_(), ty() | none}
+                 | {ty_abb_bind, ty()}.
 
 -type context() :: [{string(), binding()}].
 
@@ -83,26 +104,35 @@ term_(T) ->
         {true, _} -> T;
         {false, _} -> T;
         {if_, _, _, _, _} -> T;
+        {case_, _, _, _} -> T;
+        {tag, _, _, _, _} -> T;
         {var, _, _, _} -> T;
-        {abs, _, _, _} -> T;
+        {abs, _, _, _, _} -> T;
         {app, _, _, _} -> T;
+        {let_, _, _, _, _} -> T;
+        {fix, _, _} -> T;
+        {string, _, _} -> T;
+        {unit, _} -> T;
+        {ascribe, _, _, _} -> T;
         {proj, _, _, _} -> T;
         {record, _, _} -> T;
         {float, _, _} -> T;
         {timesfloat, _, _, _} -> T;
-        {string, _, _} -> T;
         {zero, _} -> T;
         {succ, _, _} -> T;
         {pred, _, _} -> T;
         {is_zero, _, _} -> T;
-        {let_, _, _, _, _} -> T
+        {inert, _, _} -> T
     end.
 
 -spec binding(binding()) -> binding().
 binding(B) ->
     case B of
         name_bind -> B;
-        {abb_bind, _} -> B
+        ty_var_bind -> B;
+        {var_bind, _} -> B;
+        {tm_abb_bind, _, _} -> B;
+        {ty_abb_bind, _} -> B
     end.
 
 -spec command(command()) -> command().
@@ -181,47 +211,61 @@ name_to_index(FInfo, Ctx, X) ->
 %%' Shifting
 %%
 
+-spec ty_map(OnVarF, _, ty()) -> ty() when
+      OnVarF :: fun((info(), _, integer()) -> ty()).
+ty_map(OnVarF, C, Ty) ->
+    case Ty of
+        {var, X, N} -> OnVarF(C, X, N);
+        {id, _} -> Ty;
+        string -> Ty;
+        unit -> Ty;
+        {record, FieldTys} ->
+            {record, [ {L, ty_map(OnVarF, C, FTy)} || {L, FTy} <- FieldTys ]};
+        float -> Ty;
+        bool -> Ty;
+        nat -> Ty;
+        {arr, Ty1, Ty2} ->
+            {arr, ty_map(OnVarF, C, Ty1), ty_map(OnVarF, C, Ty2)};
+        {variant, FieldTys} ->
+            {variant, [ {L, ty_map(OnVarF, C, FTy)} || {L, FTy} <- FieldTys ]}
+    end.
+
 -spec term_map(OnVarF, _, term_()) -> term_() when
       OnVarF :: fun((info(), _, integer(), integer()) -> term_()).
 term_map(OnVarF, C, T) ->
-    walk(OnVarF, C, T).
-
--spec walk(OnVarF, _, term_()) -> term_() when
-      OnVarF :: fun((info(), _, integer(), integer()) -> term_()).
-walk(OnVarF, C, T) ->
     case T of
         {true, _} ->
             T;
         {false, _} ->
             T;
         {if_, FInfo, T1, T2, T3} ->
-            {if_, FInfo, walk(OnVarF, C, T1), walk(OnVarF, C, T2), walk(OnVarF, C, T3)};
+            {if_, FInfo, term_map(OnVarF, C, T1), term_map(OnVarF, C, T2), term_map(OnVarF, C, T3)};
         {var, FInfo, X, N} ->
             OnVarF(FInfo, C, X, N);
         {abs, FInfo, X, T2} ->
-            {abs, FInfo, X, walk(OnVarF, C+1, T2)};
+            {abs, FInfo, X, term_map(OnVarF, C+1, T2)};
         {app, FInfo, T1, T2} ->
-            {app, FInfo, walk(OnVarF, C, T1), walk(OnVarF, C, T2)};
+            {app, FInfo, term_map(OnVarF, C, T1), term_map(OnVarF, C, T2)};
         {proj, FInfo, T1, Label} ->
-            {proj, FInfo, walk(OnVarF, C, T1), Label};
+            {proj, FInfo, term_map(OnVarF, C, T1), Label};
         {record, FInfo, Fields} ->
-            {record, FInfo, [ {Label, walk(OnVarF, C, FieldT)} || {Label, FieldT} <- Fields ]};
+            {record, FInfo, [ {Label, term_map(OnVarF, C, FieldT)} || {Label, FieldT} <- Fields ]};
         {float, _, _} ->
             T;
         {timesfloat, FInfo, T1, T2} ->
-            {timesfloat, FInfo, walk(OnVarF, C, T1), walk(OnVarF, C, T2)};
+            {timesfloat, FInfo, term_map(OnVarF, C, T1), term_map(OnVarF, C, T2)};
         {string, _, _} ->
             T;
         {zero, _} ->
             T;
         {succ, FInfo, T1} ->
-            {succ, FInfo, walk(OnVarF, C, T1)};
+            {succ, FInfo, term_map(OnVarF, C, T1)};
         {pred, FInfo, T1} ->
-            {pred, FInfo, walk(OnVarF, C, T1)};
+            {pred, FInfo, term_map(OnVarF, C, T1)};
         {is_zero, FInfo, T1} ->
-            {is_zero, FInfo, walk(OnVarF, C, T1)};
+            {is_zero, FInfo, term_map(OnVarF, C, T1)};
         {let_, FInfo, X, T1, T2} ->
-            {let_, FInfo, X, walk(OnVarF, C, T1), walk(OnVarF, C, T2)}
+            {let_, FInfo, X, term_map(OnVarF, C, T1), term_map(OnVarF, C, T2)}
     end.
 
 -spec term_shift_above(_, _, term_()) -> term_().
