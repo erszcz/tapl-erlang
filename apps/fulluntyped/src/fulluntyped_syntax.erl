@@ -441,24 +441,24 @@ format_binding(Ctx, B, Opts) ->
 
 format_term_test_() ->
     [
-     ?_test(format_term( {true, 0}                                          )),
-     ?_test(format_term( {false, 0}                                         )),
-     ?_test(format_term( {if_, 0, {is_zero, 0, {zero, 0}},
-                          {zero, 0},
-                          {succ, 0, {zero, 0}}}                             )),
-     ?_test(format_term( {var, 0, 1, 1}                                     )),
-     ?_test(format_term( {abs, 0, "x", {true, 0}}                           )),
-     ?_test(format_term( {app, 0, {true, 0}, {false, 0}}                    )),
-     ?_test(format_term( {proj, 0, {true, 0}, "x"}                          )),
-     ?_test(format_term( {record, 0, [{"a", {true, 0}}]}                    )),
-     ?_test(format_term( {float, 0, 3.14}                                   )),
-     ?_test(format_term( {times_float, 0, {float, 0, 2.0}, {float, 0, 3.0}} )),
-     ?_test(format_term( {string, 0, "ala ma kota, a kot ma ale"}           )),
-     ?_test(format_term( {zero, 0}                                          )),
-     ?_test(format_term( {succ, 0, {zero, 0}}                               )),
-     ?_test(format_term( {pred, 0, {succ, 0, {zero, 0}}}                    )),
-     ?_test(format_term( {is_zero, 0, {zero, 0}}                            )),
-     ?_test(format_term( {let_, 0, "a", {true, 0}, {false, 0}}              ))
+     ?_test(format_term( [], {true, 0}                                          )),
+     ?_test(format_term( [], {false, 0}                                         )),
+     ?_test(format_term( [], {if_, 0, {is_zero, 0, {zero, 0}},
+                              {zero, 0},
+                              {succ, 0, {zero, 0}}}                             )),
+     ?_test(format_term( [], {var, 0, 1, 1}                                     )),
+     ?_test(format_term( [], {abs, 0, "x", {true, 0}}                           )),
+     ?_test(format_term( [], {app, 0, {true, 0}, {false, 0}}                    )),
+     ?_test(format_term( [], {proj, 0, {true, 0}, "x"}                          )),
+     ?_test(format_term( [], {record, 0, [{"a", {true, 0}}]}                    )),
+     ?_test(format_term( [], {float, 0, 3.14}                                   )),
+     ?_test(format_term( [], {times_float, 0, {float, 0, 2.0}, {float, 0, 3.0}} )),
+     ?_test(format_term( [], {string, 0, "ala ma kota, a kot ma ale"}           )),
+     ?_test(format_term( [], {zero, 0}                                          )),
+     ?_test(format_term( [], {succ, 0, {zero, 0}}                               )),
+     ?_test(format_term( [], {pred, 0, {succ, 0, {zero, 0}}}                    )),
+     ?_test(format_term( [], {is_zero, 0, {zero, 0}}                            )),
+     ?_test(format_term( [], {let_, 0, "a", {true, 0}, {false, 0}}              ))
     ].
 
 format_binding_test_() ->
