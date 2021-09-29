@@ -3,8 +3,7 @@
 -module(fulluntyped_core).
 
 -export([eval/2,
-         eval_binding/2,
-         trace/0]).
+         eval_binding/2]).
 
 -type binding() :: fulluntyped_syntax:binding().
 -type context() :: fulluntyped_syntax:context().
@@ -146,63 +145,3 @@ is_numeric_value(Ctx, T) ->
         {succ, _, T1} -> is_numeric_value(Ctx, T1);
         _ -> false
     end.
-
--spec trace() -> ok.
-trace() ->
-    dbg:tracer(),
-    dbg:p(all, call),
-    dbg:tpl(?MODULE, x),
-    ok.
-
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
-
-eval_test_() ->
-    [
-     ?_assertEqual({zero, 0},
-                   eval({zero, 0})),
-     ?_assertEqual({succ, 0, {zero, 0}},
-                   eval({succ, 0, {zero, 0}})),
-     ?_assertEqual({zero, 0},
-                   eval({pred, 0, {succ, 0, {zero, 0}}})),
-     ?_assertEqual({zero, 0},
-                   eval({pred, 0, {pred, 0, {succ, 0, {zero, 0}}}})),
-     ?_assertEqual({succ, 0, {zero, 0}},
-                   eval({succ, 0, {pred, 0, {succ, 0, {zero, 0}}}})),
-     ?_assertEqual({true, 0},
-                   eval({is_zero, 0, {zero, 0}})),
-     ?_assertEqual({false, 0},
-                   eval({is_zero, 0, {succ, 0, {zero, 0}}})),
-     ?_assertEqual({zero, 0},
-                   eval({'if', 0,
-                         {is_zero, 0, {succ, 0, {zero, 0}}},
-                         {succ, 0, {zero, 0}},
-                         {zero, 0}})),
-     ?_assertEqual({succ, 0, {zero, 0}},
-                   eval({'if', 0,
-                         {is_zero, 0, {zero, 0}},
-                         {succ, 0, {zero, 0}},
-                         {zero, 0}})),
-     ?_assertEqual({succ, 0, {zero, 0}},
-                   eval({'if', 0,
-                         {is_zero, 0, {pred, 0, {succ, 0, {zero, 0}}}},
-                         {succ, 0, {zero, 0}},
-                         {zero, 0}})),
-     ?_assertEqual({succ, 0, {zero, 0}},
-                   eval({pred, 0, {'if', 0,
-                                   {is_zero, 0, {zero, 0}},
-                                   {succ, 0, {succ, 0, {zero, 0}}},
-                                   {succ, 0, {zero, 0}}}})),
-     ?_assertEqual({true, 0},
-                   eval({is_zero, 0, {'if', 0,
-                                      {is_zero, 0, {succ, 0, {zero, 0}}},
-                                      {succ, 0, {zero, 0}},
-                                      {zero, 0}}})),
-     ?_assertEqual({false, 0},
-                   eval({is_zero, 0, {'if', 0,
-                                      {is_zero, 0, {zero, 0}},
-                                      {succ, 0, {zero, 0}},
-                                      {zero, 0}}}))
-    ].
-
--endif. %% TEST
