@@ -157,7 +157,9 @@ pick_fresh_name(Ctx, X) ->
 -spec index_to_name(info(), context(), non_neg_integer()) -> string().
 index_to_name(FInfo, Ctx, I) ->
     try
-        {X, _} = lists:nth(I, Ctx),
+        %% OCaml List indexing is 0 based, Erlang lists indexing is 1 based,
+        %% so I+1 instead of I.
+        {X, _} = lists:nth(I+1, Ctx),
         X
     catch
         error:function_clause ->
@@ -263,7 +265,9 @@ get_binding(FInfo, Ctx, I) ->
         [] ->
             erlang:error({variable_lookup_failure, FInfo, I, context_length(Ctx)}, [FInfo, Ctx, I]);
         [_|_] ->
-            {_, Bind} = lists:nth(I, ?assert_type(Ctx, [T, ...])),
+            %% OCaml List indexing is 0 based, Erlang lists indexing is 1 based,
+            %% so I+1 instead of I.
+            {_, Bind} = lists:nth(I+1, ?assert_type(Ctx, [T, ...])),
             binding_shift(I+1, Bind)
     end.
 
