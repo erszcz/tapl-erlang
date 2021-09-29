@@ -1,4 +1,4 @@
--module(fulluntyped_syntax).
+-module(fullsimple_syntax).
 
 %% Constructors
 -export([binding/1,

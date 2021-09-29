@@ -1,15 +1,15 @@
 %% @doc This module implements TAPL chapters 5, 6, 7.
 %% See https://www.cis.upenn.edu/~bcpierce/tapl/ for the book.
--module(fulluntyped_core).
+-module(fullsimple_core).
 
 -export([eval/2,
          eval_binding/2]).
 
--type binding() :: fulluntyped_syntax:binding().
--type context() :: fulluntyped_syntax:context().
--type term_() :: fulluntyped_syntax:term_().
+-type binding() :: fullsimple_syntax:binding().
+-type context() :: fullsimple_syntax:context().
+-type term_() :: fullsimple_syntax:term_().
 
--define(syntax, fulluntyped_syntax).
+-define(syntax, fullsimple_syntax).
 
 -spec eval(context(), term_()) -> term_().
 eval(Ctx, T) ->

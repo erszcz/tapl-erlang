@@ -1,4 +1,4 @@
--module(fulluntyped_parser_tests).
+-module(fullsimple_parser_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -8,8 +8,8 @@ data() ->
 
 parser_test() ->
     Data = data(),
-    {ok, Tokens, _} = fulluntyped_lexer:string(Data),
-    {ok, ParserF} = fulluntyped_parser:parse(Tokens),
+    {ok, Tokens, _} = fullsimple_lexer:string(Data),
+    {ok, ParserF} = fullsimple_parser:parse(Tokens),
     ?assertEqual({[{eval,{3,1},{true,{3,1}}},
                    {eval,{4,1},{if_,{4,1},{false,{4,4}},{true,{4,15}},{false,{4,25}}}},
                    {bind,{6,1},"x",name_bind},

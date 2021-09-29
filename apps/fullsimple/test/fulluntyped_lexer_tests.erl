@@ -1,4 +1,4 @@
--module(fulluntyped_lexer_tests).
+-module(fullsimple_lexer_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -9,23 +9,23 @@ data() ->
 zero_test_() ->
     [?_assertEqual({ok, [{int_value,{1,1},"1"}, {semi,{1,2}}], 1},
                    begin
-                       fulluntyped_lexer:reset(),
-                       fulluntyped_lexer:string("1;")
+                       fullsimple_lexer:reset(),
+                       fullsimple_lexer:string("1;")
                    end),
      ?_assertEqual({ok, [{int_value,{1,1},"0"}, {semi,{1,2}}], 1},
                    begin
-                       fulluntyped_lexer:reset(),
-                       fulluntyped_lexer:string("0;")
+                       fullsimple_lexer:reset(),
+                       fullsimple_lexer:string("0;")
                    end),
      ?_assertEqual({ok, [{int_value,{1,1},"9"}, {semi,{1,2}}], 1},
                    begin
-                       fulluntyped_lexer:reset(),
-                       fulluntyped_lexer:string("9;")
+                       fullsimple_lexer:reset(),
+                       fullsimple_lexer:string("9;")
                    end)].
 
 lexer_test() ->
     Data = data(),
-    fulluntyped_lexer:reset(),
+    fullsimple_lexer:reset(),
     %% This fixture was checked token by token to ensure correct lexing of test/test.f,
     %% including the line and column information.
     ?assertEqual({ok,[{comment,{1,1},"/* Examples for testing */"},
@@ -179,4 +179,4 @@ lexer_test() ->
                       {false,{29,15}},
                       {semi,{29,20}}],
                   30},
-                 fulluntyped_lexer:string(Data)).
+                 fullsimple_lexer:string(Data)).

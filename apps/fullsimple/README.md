@@ -1,1 +1,1 @@
-# fulluntyped
+# fullsimple
