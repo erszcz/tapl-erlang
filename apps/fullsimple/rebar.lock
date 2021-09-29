@@ -1,0 +1,4 @@
+[{<<"gradualizer">>,
+  {git,"https://github.com/erszcz/Gradualizer.git",
+       {ref,"5d52c80659989f4c1867cb0268b66b4611f6fc8c"}},
+  0}].
