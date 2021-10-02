@@ -230,42 +230,60 @@ ty_map(OnVarF, C, Ty) ->
             {variant, [ {L, ty_map(OnVarF, C, FTy)} || {L, FTy} <- FieldTys ]}
     end.
 
--spec term_map(OnVarF, _, term_()) -> term_() when
-      OnVarF :: fun((info(), _, integer(), integer()) -> term_()).
-term_map(OnVarF, C, T) ->
+-spec term_map(OnVarF, OnTypeF, _, term_()) -> term_() when
+      OnVarF :: fun((info(), _, integer(), integer()) -> term_()),
+      OnTypeF :: fun().
+term_map(OnVarF, OnTypeF, C, T) ->
     case T of
+        {inert, FInfo, Ty} ->
+            {inert, FInfo, OnTypeF(C, Ty)};
+        {var, FInfo, X, N} ->
+            OnVarF(FInfo, C, X, N);
+        {abs, FInfo, X, Ty1, T2} ->
+            {abs, FInfo, X, OnTypeF(C, Ty1), term_map(OnVarF, OnTypeF, C+1, T2)};
+        {app, FInfo, T1, T2} ->
+            {app, FInfo, term_map(OnVarF, OnTypeF, C, T1), term_map(OnVarF, OnTypeF, C, T2)};
+        {let_, FInfo, X, T1, T2} ->
+            {let_, FInfo, X, term_map(OnVarF, OnTypeF, C, T1), term_map(OnVarF, OnTypeF, C+1, T2)};
+        {fix, FInfo, T1} ->
+            {fix, FInfo, term_map(OnVarF, OnTypeF, C, T1)};
         {true, _} ->
             T;
         {false, _} ->
             T;
         {if_, FInfo, T1, T2, T3} ->
-            {if_, FInfo, term_map(OnVarF, C, T1), term_map(OnVarF, C, T2), term_map(OnVarF, C, T3)};
-        {var, FInfo, X, N} ->
-            OnVarF(FInfo, C, X, N);
-        {abs, FInfo, X, T2} ->
-            {abs, FInfo, X, term_map(OnVarF, C+1, T2)};
-        {app, FInfo, T1, T2} ->
-            {app, FInfo, term_map(OnVarF, C, T1), term_map(OnVarF, C, T2)};
+            {if_, FInfo,
+             term_map(OnVarF, OnTypeF, C, T1),
+             term_map(OnVarF, OnTypeF, C, T2),
+             term_map(OnVarF, OnTypeF, C, T3)};
+        {string, _, _} ->
+            T;
+        {unit, _} ->
+            T;
         {proj, FInfo, T1, Label} ->
-            {proj, FInfo, term_map(OnVarF, C, T1), Label};
+            {proj, FInfo, term_map(OnVarF, OnTypeF, C, T1), Label};
         {record, FInfo, Fields} ->
-            {record, FInfo, [ {Label, term_map(OnVarF, C, FieldT)} || {Label, FieldT} <- Fields ]};
+            {record, FInfo, [ {Label, term_map(OnVarF, OnTypeF, C, FieldT)}
+                              || {Label, FieldT} <- Fields ]};
+        {ascribe, FInfo, T1, Ty1} ->
+            {ascribe, FInfo, term_map(OnVarF, OnTypeF, C, T1), OnTypeF(C, Ty1)};
         {float, _, _} ->
             T;
         {timesfloat, FInfo, T1, T2} ->
-            {timesfloat, FInfo, term_map(OnVarF, C, T1), term_map(OnVarF, C, T2)};
-        {string, _, _} ->
-            T;
+            {timesfloat, FInfo, term_map(OnVarF, OnTypeF, C, T1), term_map(OnVarF, OnTypeF, C, T2)};
         {zero, _} ->
             T;
         {succ, FInfo, T1} ->
-            {succ, FInfo, term_map(OnVarF, C, T1)};
+            {succ, FInfo, term_map(OnVarF, OnTypeF, C, T1)};
         {pred, FInfo, T1} ->
-            {pred, FInfo, term_map(OnVarF, C, T1)};
+            {pred, FInfo, term_map(OnVarF, OnTypeF, C, T1)};
         {is_zero, FInfo, T1} ->
-            {is_zero, FInfo, term_map(OnVarF, C, T1)};
-        {let_, FInfo, X, T1, T2} ->
-            {let_, FInfo, X, term_map(OnVarF, C, T1), term_map(OnVarF, C, T2)}
+            {is_zero, FInfo, term_map(OnVarF, OnTypeF, C, T1)};
+        {tag, FInfo, Label, T1, Ty} ->
+            {tag, FInfo, Label, term_map(OnVarF, OnTypeF, C, T1), OnTypeF(C, Ty)};
+        {case_, FInfo, T1, Cases} ->
+            NewCases = [ {L, {X, term_map(OnVarF, OnTypeF, C+1, Ty)}} || {L, {X, Ty}} <- Cases ],
+            {case_, FInfo, term_map(OnVarF, OnTypeF, C, T1), NewCases}
     end.
 
 -spec term_shift_above(_, _, term_()) -> term_().
