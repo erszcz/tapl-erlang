@@ -55,7 +55,7 @@
                | {if_, info(), term_(), term_(), term_()}
                | {case_, info(), term_(), [{string(), {string(), term_()}}]}
                | {tag, info(), string(), term_(), ty()}
-               | {var, info(), pos_integer(), non_neg_integer()}
+               | {var, info(), non_neg_integer(), non_neg_integer()}
                | {abs, info(), string(), ty(), term_()}
                | {app, info(), term_(), term_()}
                | {let_, info(), string(), term_(), term_()}
@@ -211,28 +211,28 @@ name_to_index(FInfo, Ctx, X) ->
 %%' Shifting
 %%
 
--spec ty_map(OnVarF, _, ty()) -> ty() when
-      OnVarF :: fun((info(), _, integer()) -> ty()).
-ty_map(OnVarF, C, Ty) ->
+-spec type_map(OnTyVarF, _, ty()) -> ty() when
+      OnTyVarF :: fun((_, _, integer()) -> ty()).
+type_map(OnTyVarF, C, Ty) ->
     case Ty of
-        {var, X, N} -> OnVarF(C, X, N);
+        {var, X, N} -> OnTyVarF(C, X, N);
         {id, _} -> Ty;
         string -> Ty;
         unit -> Ty;
         {record, FieldTys} ->
-            {record, [ {L, ty_map(OnVarF, C, FTy)} || {L, FTy} <- FieldTys ]};
+            {record, [ {L, type_map(OnTyVarF, C, FTy)} || {L, FTy} <- FieldTys ]};
         float -> Ty;
         bool -> Ty;
         nat -> Ty;
         {arr, Ty1, Ty2} ->
-            {arr, ty_map(OnVarF, C, Ty1), ty_map(OnVarF, C, Ty2)};
+            {arr, type_map(OnTyVarF, C, Ty1), type_map(OnTyVarF, C, Ty2)};
         {variant, FieldTys} ->
-            {variant, [ {L, ty_map(OnVarF, C, FTy)} || {L, FTy} <- FieldTys ]}
+            {variant, [ {L, type_map(OnTyVarF, C, FTy)} || {L, FTy} <- FieldTys ]}
     end.
 
 -spec term_map(OnVarF, OnTypeF, _, term_()) -> term_() when
-      OnVarF :: fun((info(), _, integer(), integer()) -> term_()),
-      OnTypeF :: fun().
+      OnVarF :: fun((info(), pos_integer(), non_neg_integer(), non_neg_integer()) -> term_()),
+      OnTypeF :: fun((...) -> ty()).
 term_map(OnVarF, OnTypeF, C, T) ->
     case T of
         {inert, FInfo, Ty} ->
@@ -286,22 +286,43 @@ term_map(OnVarF, OnTypeF, C, T) ->
             {case_, FInfo, term_map(OnVarF, OnTypeF, C, T1), NewCases}
     end.
 
--spec term_shift_above(_, _, term_()) -> term_().
+-spec type_shift_above(_, _, ty()) -> ty().
+type_shift_above(D, C, Ty) ->
+    type_map(fun
+                 (C1, X, N) when X >= C1 -> {var, X+D, N+D};
+                 ( _, X, N) -> {var, X, N+D}
+             end, C, Ty).
+
+-spec term_shift_above(pos_integer(), non_neg_integer(), term_()) -> term_().
 term_shift_above(D, C, T) ->
     term_map(fun
                  (FInfo, C1, X, N) when X >= C1 -> {var, FInfo, X+D, N+D};
                  (FInfo, _, X, N) -> {var, FInfo, X, N+D}
-             end, C, T).
+             end,
+             fun (C1, Ty) -> type_shift_above(D, C1, Ty) end,
+             C, T).
 
--spec term_shift(_, term_()) -> term_().
+-spec term_shift(pos_integer(), term_()) -> term_().
 term_shift(D, T) ->
     term_shift_above(D, 0, T).
+
+-spec type_shift(pos_integer(), ty()) -> ty().
+type_shift(D, Ty) -> type_shift_above(D, 0, Ty).
 
 -spec binding_shift(_, binding()) -> binding().
 binding_shift(D, Bind) ->
     case Bind of
         name_bind -> name_bind;
-        {abb_bind, T} -> {abb_bind, term_shift(D, T)}
+        ty_var_bind -> ty_var_bind;
+        {tm_abb_bind, T, MaybeTy} ->
+            {tm_abb_bind, term_shift(D, T), case MaybeTy of
+                                                none -> none;
+                                                Ty -> type_shift(D, Ty)
+                                            end};
+        {var_bind, Ty} ->
+            {var_bind, type_shift(D, Ty)};
+        {ty_abb_bind, Ty} ->
+            {ty_abb_bind, type_shift(D, Ty)}
     end.
 
 %%.
@@ -310,12 +331,36 @@ binding_shift(D, Bind) ->
 
 term_subst(J, S, T) ->
     term_map(fun
-                 (_FInfo, C, X, _) when X == J + C -> term_shift(C, S);
+                 (_FInfo, J1, X, _) when X == J1 -> term_shift(J1, S);
                  ( FInfo, _, X, N) -> {var, FInfo, X, N}
-             end, 0, T).
+             end,
+             fun (_J1, Ty) -> Ty end,
+             J, T).
 
 term_subst_top(S, T) ->
     term_shift(-1, term_subst(0, term_shift(1, S), T)).
+
+type_subst(TyS, J, TyT) ->
+    type_map(fun
+                 (J1, X, _) when X == J1 -> type_shift(J1, TyS);
+                 ( _, X, N) -> {var, X, N}
+             end, J, TyT).
+
+type_subst_top(TyS, TyT) ->
+    type_shift(-1, type_subst(type_shift(1, TyS), 0, TyT)).
+
+type_term_subst(TyS, J, T) ->
+    term_map(fun (Info, _, X, N) -> {var, Info, X, N} end,
+             fun (J1, TyT) -> type_subst(TyS, J1, TyT) end,
+             J, T).
+
+type_term_subst_top(TyS, T) ->
+    %% gradualizer TODO:
+    %% "The integer 1 is expected to have type neg_integer() but it has type 1" is printed
+    %% for the next line, but it seems invalid.
+    %% All the funs below and down the call chain use only non-neg integers and addition,
+    %% so there's no reason for 1 to be required to be negative.
+    term_shift(-1, type_term_subst(type_shift(1, TyS), 0, T)).
 
 %%.
 %%' Context management (continued)
@@ -331,6 +376,20 @@ get_binding(FInfo, Ctx, I) ->
             %% so I+1 instead of I.
             {_, Bind} = lists:nth(I+1, ?assert_type(Ctx, [T, ...])),
             binding_shift(I+1, Bind)
+    end.
+
+-spec get_type_from_context(info(), context(), non_neg_integer()) -> ty().
+get_type_from_context(Info, Ctx, I) ->
+    case get_binding(Info, Ctx, I) of
+        {var_bind, Ty} -> Ty;
+        {tm_abb_bind, _, none} ->
+            erlang:error({no_type_recorded_for_variable, index_to_name(Info, Ctx, I)},
+                         [Info, Ctx, I]);
+        {tm_abb_bind, _, Ty} ->
+            Ty;
+        _ ->
+            erlang:error({wrong_kind_of_binding_for_variable, index_to_name(Info, Ctx, I)},
+                         [Info, Ctx, I])
     end.
 
 %%.
