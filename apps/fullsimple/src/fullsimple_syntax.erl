@@ -402,19 +402,25 @@ term_info(T) ->
         {true, Info} -> Info;
         {false, Info} -> Info;
         {if_, Info, _, _, _} -> Info;
+        {case_, Info, _, _} -> Info;
+        {tag, Info, _, _, _} -> Info;
         {var, Info, _, _} -> Info;
-        {abs, Info, _, _} -> Info;
+        {abs, Info, _, _, _} -> Info;
         {app, Info, _, _} -> Info;
+        {let_, Info, _, _, _} -> Info;
+        {fix, Info, _} -> Info;
+        {string, Info, _} -> Info;
+        {unit, Info} -> Info;
+        {ascribe, Info, _, _} -> Info;
         {proj, Info, _, _} -> Info;
         {record, Info, _} -> Info;
         {float, Info, _} -> Info;
         {timesfloat, Info, _, _} -> Info;
-        {string, Info, _} -> Info;
         {zero, Info} -> Info;
         {succ, Info, _} -> Info;
         {pred, Info, _} -> Info;
         {is_zero, Info, _} -> Info;
-        {let_, Info, _, _, _} -> Info
+        {inert, Info, _} -> Info
     end.
 
 %%.
