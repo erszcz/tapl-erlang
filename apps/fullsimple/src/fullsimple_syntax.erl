@@ -502,30 +502,31 @@ prettypr_a_type(Outer, Ctx, Ty) ->
     end.
 
 -spec prettypr_term(boolean(), context(), term_()) -> prettypr:document().
-prettypr_term(_Outer, Ctx, {if_, _Info, T1, T2, T3}) ->
-    prettypr:sep([
-                  prettypr:par([prettypr:text("if"),
-                                prettypr_term(false, Ctx, T1)], 2),
-                  prettypr:par([prettypr:text("then"),
-                                prettypr_term(false, Ctx, T2)], 2),
-                  prettypr:par([prettypr:text("else"),
-                                prettypr_term(false, Ctx, T3)], 2)
-                 ]);
-
-prettypr_term(Outer, Ctx, {abs, _Info, X, T2}) ->
-    {NewCtx, X2} = pick_fresh_name(Ctx, X),
-    prettypr:follow(prettypr:text(string:join(["lambda ", X2, "."], "")),
-                    prettypr_term(Outer, NewCtx, T2), 2);
-
-prettypr_term(Outer, Ctx, {let_, _Info, X, T1, T2}) ->
-    prettypr:par([prettypr:text(string:join(["let ", X, " = "], "")),
-                  prettypr:beside(prettypr_term(false, Ctx, T1),
-                                  prettypr:text("in")),
-                 prettypr_term(false, add_name(Ctx, X), T2)], 0);
-
 prettypr_term(Outer, Ctx, T) ->
-    prettypr_app_term(Outer, Ctx, T).
+    case T of
+        {if_, _Info, T1, T2, T3} ->
+            prettypr:sep([
+                          prettypr:par([prettypr:text("if"),
+                                        prettypr_term(false, Ctx, T1)], 2),
+                          prettypr:par([prettypr:text("then"),
+                                        prettypr_term(false, Ctx, T2)], 2),
+                          prettypr:par([prettypr:text("else"),
+                                        prettypr_term(false, Ctx, T3)], 2)
+                         ]);
+        {abs, _Info, X, T2} ->
+            {NewCtx, X2} = pick_fresh_name(Ctx, X),
+            prettypr:follow(prettypr:text(string:join(["lambda ", X2, "."], "")),
+                            prettypr_term(Outer, NewCtx, T2), 2);
+        {let_, _Info, X, T1, T2} ->
+            prettypr:par([prettypr:text(string:join(["let ", X, " = "], "")),
+                          prettypr:beside(prettypr_term(false, Ctx, T1),
+                                          prettypr:text("in")),
+                          prettypr_term(false, add_name(Ctx, X), T2)], 0);
+        _ ->
+            prettypr_app_term(Outer, Ctx, T)
+    end.
 
+-spec prettypr_app_term(boolean(), context(), term_()) -> prettypr:document().
 prettypr_app_term(_Outer, Ctx, {app, _Info, T1, T2}) ->
     prettypr:par([prettypr_app_term(false, Ctx, T1),
                   prettypr_a_term(false, Ctx, T2)], 0);
