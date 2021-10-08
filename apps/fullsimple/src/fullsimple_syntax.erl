@@ -587,44 +587,40 @@ prettypr_path_term(Outer, Ctx, T) ->
             prettypr_ascribe_term(Outer, Ctx, T)
     end.
 
-prettypr_a_term(_Outer, _Ctx, {true, _}) ->
-    prettypr:text("true");
-
-prettypr_a_term(_Outer, _Ctx, {false, _}) ->
-    prettypr:text("false");
-
-prettypr_a_term(_Outer, Ctx, {var, Info, X, N}) ->
-    case context_length(Ctx) of
-        N ->
-            prettypr:text(index_to_name(Info, Ctx, X));
+-spec prettypr_a_term(boolean(), context(), term_()) -> prettypr:document().
+prettypr_a_term(Outer, Ctx, T) ->
+    case T of
+        {true, _} ->
+            prettypr:text("true");
+        {false, _} ->
+            prettypr:text("false");
+        {var, Info, X, N} ->
+            case context_length(Ctx) of
+                N ->
+                    prettypr:text(index_to_name(Info, Ctx, X));
+                _ ->
+                    prettypr:text(io_lib:format("[bad index: ~p / ~p in ~p]", [X, N, Ctx]))
+            end;
+        {record, _Info, Fields} ->
+            FieldsD = lists:join(prettypr:text(","),
+                                 [ prettypr:par([prettypr:text(Label),
+                                                 prettypr:text("="),
+                                                 prettypr_term(false, Ctx, T)], 2)
+                                   || {Label, T} <- Fields ]),
+            prettypr:par([prettypr:text("{")] ++ FieldsD ++ [prettypr:text("}")], 2);
+        {float, _Info, S} ->
+            prettypr:text(io_lib:format("~p", [S]));
+        {string, _Info, S} ->
+            prettypr:text(io_lib:format("~p", [S]));
+        {zero, _} ->
+            prettypr:text("0");
+        {succ, _, T} ->
+            prettypr_succ(Ctx, T, 1);
         _ ->
-            prettypr:text(io_lib:format("[bad index: ~p / ~p in ~p]", [X, N, Ctx]))
-    end;
-
-prettypr_a_term(_Outer, Ctx, {record, _Info, Fields}) ->
-    FieldsD = lists:join(prettypr:text(","),
-                         [ prettypr:par([prettypr:text(Label),
-                                         prettypr:text("="),
-                                         prettypr_term(false, Ctx, T)], 2)
-                           || {Label, T} <- Fields ]),
-    prettypr:par([prettypr:text("{")] ++ FieldsD ++ [prettypr:text("}")], 2);
-
-prettypr_a_term(_Outer, _Ctx, {float, _Info, S}) ->
-    prettypr:text(io_lib:format("~p", [S]));
-
-prettypr_a_term(_Outer, _Ctx, {string, _Info, S}) ->
-    prettypr:text(io_lib:format("~p", [S]));
-
-prettypr_a_term(_Outer, _Ctx, {zero, _}) ->
-    prettypr:text("0");
-
-prettypr_a_term(_Outer, Ctx, {succ, _, T}) ->
-    prettypr_succ(Ctx, T, 1);
-
-prettypr_a_term(_Outer, Ctx, T) ->
-    prettypr:beside(prettypr:beside(prettypr:text("("),
-                                    prettypr_term(false, Ctx, T)),
-                    prettypr:text(")")).
+            prettypr:beside(prettypr:beside(prettypr:text("("),
+                                            prettypr_term(false, Ctx, T)),
+                            prettypr:text(")"))
+    end.
 
 prettypr_succ(_Ctx, {zero, _}, N) ->
     prettypr:text(integer_to_list(N));
