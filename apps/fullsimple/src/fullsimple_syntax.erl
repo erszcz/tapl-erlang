@@ -566,12 +566,26 @@ prettypr_app_term(Outer, Ctx, T) ->
             prettypr_path_term(Outer, Ctx, T)
     end.
 
-prettypr_path_term(_Outer, Ctx, {proj, _Info, T1, Label}) ->
-    prettypr:beside(prettypr:beside(prettypr_a_term(false, Ctx, T1), prettypr:text(".")),
-                    prettypr:text(Label));
+-spec prettypr_ascribe_term(boolean(), context(), term_()) -> prettypr:document().
+prettypr_ascribe_term(Outer, Ctx, T) ->
+    case T of
+        {ascribe, _Info, T1, Ty1} ->
+            prettypr:par([prettypr_app_term(false, Ctx, T1),
+                          prettypr:text("as"),
+                          prettypr_type(false, Ctx, Ty1)], 2);
+        _ ->
+            prettypr_a_term(Outer, Ctx, T)
+    end.
 
+-spec prettypr_path_term(boolean(), context(), term_()) -> prettypr:document().
 prettypr_path_term(Outer, Ctx, T) ->
-    prettypr_a_term(Outer, Ctx, T).
+    case T of
+        {proj, _Info, T1, Label} ->
+            prettypr:beside(prettypr:beside(prettypr_a_term(false, Ctx, T1), prettypr:text(".")),
+                            prettypr:text(Label));
+        _ ->
+            prettypr_ascribe_term(Outer, Ctx, T)
+    end.
 
 prettypr_a_term(_Outer, _Ctx, {true, _}) ->
     prettypr:text("true");
