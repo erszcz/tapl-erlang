@@ -547,25 +547,24 @@ prettypr_term(Outer, Ctx, T) ->
     end.
 
 -spec prettypr_app_term(boolean(), context(), term_()) -> prettypr:document().
-prettypr_app_term(_Outer, Ctx, {app, _Info, T1, T2}) ->
-    prettypr:par([prettypr_app_term(false, Ctx, T1),
-                  prettypr_a_term(false, Ctx, T2)], 0);
-
-prettypr_app_term(_Outer, Ctx, {times_float, _Info, T1, T2}) ->
-    prettypr:follow(prettypr:follow(prettypr:text("timesfloat"),
-                                    prettypr_a_term(false, Ctx, T1)),
-                    prettypr_a_term(false, Ctx, T2));
-
-prettypr_app_term(_Outer, Ctx, {pred, _Info, T}) ->
-    prettypr:follow(prettypr:text("pred"),
-                    prettypr_a_term(false, Ctx, T));
-
-prettypr_app_term(_Outer, Ctx, {is_zero, _Info, T}) ->
-    prettypr:follow(prettypr:text("iszero"),
-                    prettypr_a_term(false, Ctx, T));
-
 prettypr_app_term(Outer, Ctx, T) ->
-    prettypr_path_term(Outer, Ctx, T).
+    case T of
+        {app, _Info, T1, T2} ->
+            prettypr:par([prettypr_app_term(false, Ctx, T1),
+                          prettypr_a_term(false, Ctx, T2)], 0);
+        {timesfloat, _Info, T1, T2} ->
+            prettypr:follow(prettypr:follow(prettypr:text("timesfloat"),
+                                            prettypr_a_term(false, Ctx, T1)),
+                            prettypr_a_term(false, Ctx, T2));
+        {pred, _Info, T} ->
+            prettypr:follow(prettypr:text("pred"),
+                            prettypr_a_term(false, Ctx, T));
+        {is_zero, _Info, T} ->
+            prettypr:follow(prettypr:text("iszero"),
+                            prettypr_a_term(false, Ctx, T));
+        _ ->
+            prettypr_path_term(Outer, Ctx, T)
+    end.
 
 prettypr_path_term(_Outer, Ctx, {proj, _Info, T1, Label}) ->
     prettypr:beside(prettypr:beside(prettypr_a_term(false, Ctx, T1), prettypr:text(".")),
