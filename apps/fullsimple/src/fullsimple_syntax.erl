@@ -501,6 +501,10 @@ prettypr_a_type(Outer, Ctx, Ty) ->
                           prettypr:text(")")], 2)
     end.
 
+-spec prettypr_term(context(), term_()) -> prettypr:document().
+prettypr_term(Ctx, T) ->
+    prettypr_term(true, Ctx, T).
+
 -spec prettypr_term(boolean(), context(), term_()) -> prettypr:document().
 prettypr_term(Outer, Ctx, T) ->
     case T of
@@ -653,14 +657,27 @@ format_binding(Ctx, B) ->
 
 -spec format_binding(context(), binding(), _) -> string().
 format_binding(Ctx, B, Opts) ->
+    Doc = prettypr_binding(Ctx, B),
+    prettypr:format(Doc,
+                    maps:get(paper_width, Opts, 80),
+                    maps:get(line_width, Opts, 65)).
+
+-spec prettypr_binding(context(), binding()) -> prettypr:document().
+prettypr_binding(Ctx, B) ->
     case B of
         name_bind ->
-            "";
-        {abb_bind, T} ->
-            Doc = prettypr:beside(prettypr:text("= "), prettypr_term(true, Ctx, T)),
-            prettypr:format(Doc,
-                            maps:get(paper_width, Opts, 80),
-                            maps:get(line_width, Opts, 65))
+            prettypr:empty();
+        ty_var_bind ->
+            prettypr:empty();
+        {var_bind, Ty} ->
+            prettypr:follow(prettypr:text(": "),
+                            prettypr_type(Ctx, Ty), 2);
+        {tm_abb_bind, T, _Ty} ->
+            prettypr:follow(prettypr:text("= "),
+                            prettypr_term(Ctx, T), 2);
+        {ty_abb_bind, Ty} ->
+            prettypr:follow(prettypr:text("= "),
+                            prettypr_term(Ctx, Ty), 2)
     end.
 
 %%.
