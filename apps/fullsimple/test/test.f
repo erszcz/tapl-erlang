@@ -1,29 +1,32 @@
 /* Examples for testing */
 
-true;
-if false then true else false; 
-
-x/;
-x;
-
-x = true;
-x;
-if x then false else x; 
-
-lambda x. x;
-(lambda x. x) (lambda x. x x); 
-lambda _. true;
-
-{x=lambda x.x, y=(lambda x.x)(lambda x.x)}; 
-{x=lambda x.x, y=(lambda x.x)(lambda x.x)}.x; 
+  
+ lambda x:<a:Bool,b:Bool>. x;
+ 
 
 "hello";
 
-timesfloat (timesfloat 2.0 3.0) (timesfloat 4.0 5.0);
+unit;
 
-0; 
-succ (pred 0);
-iszero (pred (succ (succ 0))); 
+lambda x:A. x;
 
 let x=true in x;
-let _=true in false;
+
+timesfloat 2.0 3.14159;
+
+{x=true, y=false}; 
+{x=true, y=false}.x;
+{true, false}; 
+{true, false}.1; 
+
+
+lambda x:Bool. x;
+(lambda x:Bool->Bool. if x false then true else false) 
+  (lambda x:Bool. if x then false else true); 
+
+lambda x:Nat. succ x;
+(lambda x:Nat. succ (succ x)) (succ 0); 
+
+T = Nat->Nat;
+lambda f:T. lambda x:Nat. f (f x);
+
