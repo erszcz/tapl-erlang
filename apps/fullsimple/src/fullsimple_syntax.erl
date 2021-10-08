@@ -513,15 +513,35 @@ prettypr_term(Outer, Ctx, T) ->
                           prettypr:par([prettypr:text("else"),
                                         prettypr_term(false, Ctx, T3)], 2)
                          ]);
-        {abs, _Info, X, T2} ->
+        {case_, _Info, T1, Cases} ->
+            CaseDocs = lists:map(fun ({Label, {X, Ty1}}) ->
+                                         {NewCtx, X_} = pick_fresh_name(Ctx, X),
+                                         prettypr:par([prettypr:text("<"),
+                                                       prettypr:text(Label),
+                                                       prettypr:text("="),
+                                                       prettypr:text(X_),
+                                                       prettypr:text(">==>"),
+                                                       prettypr_term(false, NewCtx, Ty1)], 2)
+                                 end, Cases),
+            prettypr:par([prettypr:text("case"),
+                          prettypr_term(false, Ctx, T1),
+                          prettypr:text("of")] ++ CaseDocs, 0);
+        {abs, _Info, X, Ty1, T2} ->
             {NewCtx, X2} = pick_fresh_name(Ctx, X),
-            prettypr:follow(prettypr:text(string:join(["lambda ", X2, "."], "")),
-                            prettypr_term(Outer, NewCtx, T2), 2);
+            prettypr:par([prettypr:text("lambda"),
+                          prettypr:text(X2),
+                          prettypr:text(":"),
+                          prettypr_type(false, Ctx, Ty1),
+                          prettypr:text("."),
+                          prettypr_term(Outer, NewCtx, T2)], 2);
         {let_, _Info, X, T1, T2} ->
             prettypr:par([prettypr:text(string:join(["let ", X, " = "], "")),
                           prettypr:beside(prettypr_term(false, Ctx, T1),
                                           prettypr:text("in")),
                           prettypr_term(false, add_name(Ctx, X), T2)], 0);
+        {fix, _Info, T1} ->
+            prettypr:follow(prettypr:text("fix"),
+                            prettypr_term(false, Ctx, T1), 2);
         _ ->
             prettypr_app_term(Outer, Ctx, T)
     end.
