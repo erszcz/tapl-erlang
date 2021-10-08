@@ -34,7 +34,7 @@
 %%' Datatypes
 %%
 
--type ty() :: {var, integer(), integer()}
+-type ty() :: {var, non_neg_integer(), integer()}
             | {id, string()}
             | {arr, ty(), ty()}
             | unit
@@ -427,10 +427,6 @@ term_info(T) ->
 %%' Printing
 %%
 
--spec small(term_()) -> boolean().
-small({var, _, _, _}) -> true;
-small(_) -> false.
-
 -spec format_term(context(), term_()) -> string().
 format_term(Ctx, T) -> format_term(Ctx, T, #{}).
 
@@ -440,6 +436,70 @@ format_term(Ctx, T, Opts) ->
     prettypr:format(Doc,
                     maps:get(paper_width, Opts, 80),
                     maps:get(line_width, Opts, 65)).
+
+-spec prettypr_type(context(), ty()) -> prettypr:document().
+prettypr_type(Ctx, Ty) ->
+    prettypr_type(true, Ctx, Ty).
+
+-spec prettypr_type(boolean(), context(), ty()) -> prettypr:document().
+prettypr_type(Outer, Ctx, Ty) ->
+    prettypr_arrow_type(Outer, Ctx, Ty).
+
+-spec prettypr_arrow_type(boolean(), context(), ty()) -> prettypr:document().
+prettypr_arrow_type(Outer, Ctx, Ty) ->
+    case Ty of
+        {arr, Ty1, Ty2} ->
+            prettypr:par([prettypr_a_type(false, Ctx, Ty1),
+                          prettypr:text(" -> "),
+                          prettypr_a_type(false, Ctx, Ty2)], 2);
+        _ ->
+            prettypr_a_type(Outer, Ctx, Ty)
+    end.
+
+-spec prettypr_a_type(boolean(), context(), ty()) -> prettypr:document().
+prettypr_a_type(Outer, Ctx, Ty) ->
+    case Ty of
+        {var, X, N} ->
+            case context_length(Ctx) of
+                N ->
+                    DummyInfo = {1,1},
+                    prettypr:text(index_to_name(DummyInfo, Ctx, X));
+                _ ->
+                    BadIndex = ?assert_type(io_lib:format("[bad index: ~p / ~p in ~p]",
+                                                          [X, N, Ctx]), string()),
+                    prettypr:text(BadIndex)
+            end;
+        {id, B} ->
+            prettypr:text(B);
+        bool ->
+            prettypr:text("Bool");
+        {variant, Fields} ->
+            FieldsD = lists:join(prettypr:text(","),
+                                 [ prettypr:par([prettypr:text(Label),
+                                                 prettypr:text(":"),
+                                                 prettypr_type(false, Ctx, Ty1)], 2)
+                                   || {Label, Ty1} <- Fields ]),
+            prettypr:par([prettypr:text("<")] ++ FieldsD ++ [prettypr:text(">")], 2);
+        string ->
+            prettypr:text("String");
+        unit ->
+            prettypr:text("Unit");
+        {record, Fields} ->
+            FieldsD = lists:join(prettypr:text(","),
+                                 [ prettypr:par([prettypr:text(Label),
+                                                 prettypr:text(":"),
+                                                 prettypr_type(false, Ctx, Ty1)], 2)
+                                   || {Label, Ty1} <- Fields ]),
+            prettypr:par([prettypr:text("{")] ++ FieldsD ++ [prettypr:text("}")], 2);
+        float ->
+            prettypr:text("Float");
+        nat ->
+            prettypr:text("Nat");
+        _ ->
+            prettypr:par([prettypr:text("("),
+                          prettypr_type(Outer, Ctx, Ty),
+                          prettypr:text(")")], 2)
+    end.
 
 -spec prettypr_term(boolean(), context(), term_()) -> prettypr:document().
 prettypr_term(_Outer, Ctx, {if_, _Info, T1, T2, T3}) ->
