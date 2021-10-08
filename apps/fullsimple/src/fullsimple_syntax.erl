@@ -590,10 +590,22 @@ prettypr_path_term(Outer, Ctx, T) ->
 -spec prettypr_a_term(boolean(), context(), term_()) -> prettypr:document().
 prettypr_a_term(Outer, Ctx, T) ->
     case T of
+        {inert, _Info, Ty} ->
+            prettypr:par([prettypr:text("inert["),
+                          prettypr_type(false, Ctx, Ty),
+                          prettypr:text("]")], 2);
         {true, _} ->
             prettypr:text("true");
         {false, _} ->
             prettypr:text("false");
+        {tag, _, Label, T1, Ty} ->
+            prettypr:par([prettypr:text("<"),
+                          prettypr:text(Label),
+                          prettypr:text("="),
+                          prettypr_term(false, Ctx, T1),
+                          prettypr:text(">"),
+                          prettypr:text("as"),
+                          prettypr_type(Outer, Ctx, Ty)], 2);
         {var, Info, X, N} ->
             case context_length(Ctx) of
                 N ->
@@ -601,6 +613,10 @@ prettypr_a_term(Outer, Ctx, T) ->
                 _ ->
                     prettypr:text(io_lib:format("[bad index: ~p / ~p in ~p]", [X, N, Ctx]))
             end;
+        {string, _Info, S} ->
+            prettypr:text(io_lib:format("~p", [S]));
+        {unit, _} ->
+            prettypr:text("unit");
         {record, _Info, Fields} ->
             FieldsD = lists:join(prettypr:text(","),
                                  [ prettypr:par([prettypr:text(Label),
@@ -609,8 +625,6 @@ prettypr_a_term(Outer, Ctx, T) ->
                                    || {Label, T} <- Fields ]),
             prettypr:par([prettypr:text("{")] ++ FieldsD ++ [prettypr:text("}")], 2);
         {float, _Info, S} ->
-            prettypr:text(io_lib:format("~p", [S]));
-        {string, _Info, S} ->
             prettypr:text(io_lib:format("~p", [S]));
         {zero, _} ->
             prettypr:text("0");
