@@ -465,7 +465,7 @@ format_binding_test_() ->
     [
      ?_test(format_binding( empty_context(), name_bind                      )),
      ?_test(format_binding( add_name(empty_context(), "x"),
-                            {abb_bind, {var, 0, 1, 1}}                      ))
+                            {abb_bind, {var, 0, 1, 0}}                      ))
     ].
 
 -endif. %% TEST
