@@ -1,7 +1,8 @@
 -module(fullsimple_syntax).
 
 %% Constructors
--export([binding/1,
+-export([ty/1,
+         binding/1,
          command/1,
          info/1,
          term_/1]).
@@ -9,6 +10,7 @@
 %% Context management
 -export([add_binding/3,
          add_name/2,
+         is_name_bound/2,
          context_length/1,
          empty_context/0,
          get_binding/3,
@@ -34,7 +36,7 @@
 %%' Datatypes
 %%
 
--type ty() :: {var, non_neg_integer(), integer()}
+-type ty() :: {var, non_neg_integer(), non_neg_integer()}
             | {id, string()}
             | {arr, ty(), ty()}
             | unit
@@ -89,6 +91,21 @@
 %%.
 %%' Constructors
 %%
+
+-spec ty(ty()) -> ty().
+ty(Ty) ->
+    case Ty of
+        {var, _, _} -> Ty;
+        {id, _} -> Ty;
+        {arr, _, _} -> Ty;
+        unit -> Ty;
+        {record, _} -> Ty;
+        {variant, _} -> Ty;
+        bool -> Ty;
+        string -> Ty;
+        float -> Ty;
+        nat -> Ty
+    end.
 
 -spec info(token()) -> info().
 info({_, Info}) -> Info;
