@@ -97,7 +97,7 @@ info({_, Info, _Chars}) -> Info.
 %% This function might seem useless, since it "doesn't do anything",
 %% but in fact it gives us two guarantees:
 %% - thanks to Gradualizer it provides compile-time warnings if we build an invalid term_()
-%% - at runtime, it crashes if we try to build an invalid term_()
+%% - it fails fast (aka crashes) at runtime if we try to build an invalid term_()
 -spec term_(term_()) -> term_().
 term_(T) ->
     case T of
