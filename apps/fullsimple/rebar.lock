@@ -1,4 +1,4 @@
 [{<<"gradualizer">>,
   {git,"https://github.com/erszcz/Gradualizer.git",
-       {ref,"5d52c80659989f4c1867cb0268b66b4611f6fc8c"}},
+       {ref,"e44ed24e7be0830c138ac8d63dc295d8a4f00b91"}},
   0}].
