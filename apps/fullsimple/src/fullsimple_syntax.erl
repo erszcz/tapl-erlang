@@ -53,25 +53,25 @@
 -type term_() :: {true, info()}
                | {false, info()}
                | {if_, info(), term_(), term_(), term_()}
-               %| {case_, info(), term_(), [{string(), {string(), term_()}}]}
-               %| {tag, info(), string(), term_(), ty()}
-               %| {var, info(), non_neg_integer(), non_neg_integer()}
-               %| {abs, info(), string(), ty(), term_()}
-               %| {app, info(), term_(), term_()}
-               %| {let_, info(), string(), term_(), term_()}
-               %| {fix, info(), term_()}
-               %| {string, info(), string()}
+               | {case_, info(), term_(), [{string(), {string(), term_()}}]}
+               | {tag, info(), string(), term_(), ty()}
+               | {var, info(), non_neg_integer(), non_neg_integer()}
+               | {abs, info(), string(), ty(), term_()}
+               | {app, info(), term_(), term_()}
+               | {let_, info(), string(), term_(), term_()}
+               | {fix, info(), term_()}
+               | {string, info(), string()}
                | {unit, info()}
-               %| {ascribe, info(), term_(), ty()}
-               %| {proj, info(), term_(), string()}
-               %| {record, info(), [{string(), term_()}]}
-               %| {float, info(), float()}
-               %| {timesfloat, info(), term_(), term_()}
-               | {zero, info()}.
-               %| {succ, info(), term_()}
-               %| {pred, info(), term_()}
-               %| {is_zero, info(), term_()}
-               %| {inert, info(), ty()}.
+               | {ascribe, info(), term_(), ty()}
+               | {proj, info(), term_(), string()}
+               | {record, info(), [{string(), term_()}]}
+               | {float, info(), float()}
+               | {timesfloat, info(), term_(), term_()}
+               | {zero, info()}
+               | {succ, info(), term_()}
+               | {pred, info(), term_()}
+               | {is_zero, info(), term_()}
+               | {inert, info(), ty()}.
 %% TAPL `term' type, but `term()' is a builtin type in Erlang,
 %% hence the name `term_()'.
 
@@ -101,28 +101,28 @@ info({_, Info, _Chars}) -> Info.
 -spec term_(term_()) -> term_().
 term_(T) ->
     case T of
-        {true, _} -> T
-        %{false, _} -> T;
-        %{if_, _, _, _, _} -> T;
-        %{case_, _, _, _} -> T;
-        %{tag, _, _, _, _} -> T;
-        %{var, _, _, _} -> T;
-        %{abs, _, _, _, _} -> T;
-        %{app, _, _, _} -> T;
-        %{let_, _, _, _, _} -> T;
-        %{fix, _, _} -> T;
-        %{string, _, _} -> T;
-        %{unit, _} -> T;
-        %{ascribe, _, _, _} -> T;
-        %{proj, _, _, _} -> T;
-        %{record, _, _} -> T;
-        %{float, _, _} -> T;
-        %{timesfloat, _, _, _} -> T;
-        %{zero, _} -> T;
-        %{succ, _, _} -> T;
-        %{pred, _, _} -> T;
-        %{is_zero, _, _} -> T;
-        %{inert, _, _} -> T
+        {true, _} -> T;
+        {false, _} -> T;
+        {if_, _, _, _, _} -> T;
+        {case_, _, _, _} -> T;
+        {tag, _, _, _, _} -> T;
+        {var, _, _, _} -> T;
+        {abs, _, _, _, _} -> T;
+        {app, _, _, _} -> T;
+        {let_, _, _, _, _} -> T;
+        {fix, _, _} -> T;
+        {string, _, _} -> T;
+        {unit, _} -> T;
+        {ascribe, _, _, _} -> T;
+        {proj, _, _, _} -> T;
+        {record, _, _} -> T;
+        {float, _, _} -> T;
+        {timesfloat, _, _, _} -> T;
+        {zero, _} -> T;
+        {succ, _, _} -> T;
+        {pred, _, _} -> T;
+        {is_zero, _, _} -> T;
+        {inert, _, _} -> T
     end.
 
 -spec binding(binding()) -> binding().
