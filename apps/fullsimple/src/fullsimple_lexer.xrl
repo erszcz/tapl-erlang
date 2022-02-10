@@ -40,6 +40,9 @@ Rules.
 [-~%\\+&\|:@`$]+ :
     {token, create_id(TokenLine, TokenChars)}.
 
+[-=]+[>] :
+    {token, create_id(TokenLine, TokenChars)}.
+
 [*#/!\?^(){}\[\]<>\.;_,=\'] :
     {token, create_id(TokenLine, TokenChars)}.
 
