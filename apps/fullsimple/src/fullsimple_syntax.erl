@@ -52,12 +52,15 @@
 -type token() :: {atom(), info()}
                | {atom(), info(), string()}.
 
+-type index() :: non_neg_integer().
+-type context_size() :: non_neg_integer().
+
 -type term_() :: {true, info()}
                | {false, info()}
                | {if_, info(), term_(), term_(), term_()}
                | {case_, info(), term_(), [{string(), {string(), term_()}}]}
                | {tag, info(), string(), term_(), ty()}
-               | {var, info(), non_neg_integer(), non_neg_integer()}
+               | {var, info(), index(), context_size()}
                | {abs, info(), string(), ty(), term_()}
                | {app, info(), term_(), term_()}
                | {let_, info(), string(), term_(), term_()}
