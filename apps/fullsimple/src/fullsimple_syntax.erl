@@ -26,9 +26,10 @@
 -export([term_info/1]).
 
 -export_type([binding/0,
-              context/0,
               command/0,
-              term_/0]).
+              context/0,
+              term_/0,
+              ty/0]).
 
 -include_lib("gradualizer/include/gradualizer.hrl").
 
@@ -36,7 +37,7 @@
 %%' Datatypes
 %%
 
--type ty() :: {var, non_neg_integer(), non_neg_integer()}
+-type ty() :: {var, index(), context_size()}
             | {id, string()}
             | {arr, ty(), ty()}
             | unit
@@ -357,7 +358,7 @@ term_subst(J, S, T) ->
              fun (_J1, Ty) -> Ty end,
              J, T).
 
--spec term_subst_top(pos_integer(), term_()) -> term_().
+-spec term_subst_top(term_(), term_()) -> term_().
 term_subst_top(S, T) ->
     term_shift(-1, term_subst(0, term_shift(1, S), T)).
 
@@ -387,7 +388,7 @@ type_term_subst_top(TyS, T) ->
 %%' Context management (continued)
 %%
 
--spec get_binding(info(), context(), non_neg_integer()) -> binding().
+-spec get_binding(info(), context(), index()) -> binding().
 get_binding(FInfo, Ctx, I) ->
     case Ctx of
         [] ->
