@@ -354,6 +354,7 @@ term_subst(J, S, T) ->
              fun (_J1, Ty) -> Ty end,
              J, T).
 
+-spec term_subst_top(pos_integer(), term_()) -> term_().
 term_subst_top(S, T) ->
     term_shift(-1, term_subst(0, term_shift(1, S), T)).
 
@@ -642,15 +643,15 @@ prettypr_a_term(Outer, Ctx, T) ->
             FieldsD = lists:join(prettypr:text(","),
                                  [ prettypr:par([prettypr:text(Label),
                                                  prettypr:text("="),
-                                                 prettypr_term(false, Ctx, T)], 2)
-                                   || {Label, T} <- Fields ]),
+                                                 prettypr_term(false, Ctx, T1)], 2)
+                                   || {Label, T1} <- Fields ]),
             prettypr:par([prettypr:text("{")] ++ FieldsD ++ [prettypr:text("}")], 2);
         {float, _Info, S} ->
             prettypr:text(io_lib:format("~p", [S]));
         {zero, _} ->
             prettypr:text("0");
-        {succ, _, T} ->
-            prettypr_succ(Ctx, T, 1);
+        {succ, _, T1} ->
+            prettypr_succ(Ctx, T1, 1);
         _ ->
             prettypr:beside(prettypr:beside(prettypr:text("("),
                                             prettypr_term(false, Ctx, T)),
