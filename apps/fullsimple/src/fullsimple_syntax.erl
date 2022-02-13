@@ -699,7 +699,7 @@ prettypr_binding(Ctx, B) ->
                             prettypr_term(Ctx, T), 2);
         {ty_abb_bind, Ty} ->
             prettypr:follow(prettypr:text("= "),
-                            prettypr_term(Ctx, Ty), 2)
+                            prettypr_type(Ctx, Ty), 2)
     end.
 
 %%.
