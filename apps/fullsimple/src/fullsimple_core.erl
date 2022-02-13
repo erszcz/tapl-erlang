@@ -458,7 +458,7 @@ type_of(Ctx, T) ->
             end
     end.
 
--spec type_error(info(), string()) -> none().
+-spec type_error(info(), io_lib:chars()) -> none().
 type_error(Info, Error) ->
     Format = case Info of
                  {_,_} -> "~p:~p: ~ts\n";

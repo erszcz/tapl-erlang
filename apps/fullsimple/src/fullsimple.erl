@@ -69,7 +69,7 @@ check_binding(Info, Ctx, B) ->
         {ty_abb_bind, TyT} -> {ty_abb_bind, TyT}
     end.
 
--spec format_binding_type(context(), binding()) -> string().
+-spec format_binding_type(context(), binding()) -> io_lib:chars().
 format_binding_type(Ctx, B) ->
     case B of
         name_bind -> "";
