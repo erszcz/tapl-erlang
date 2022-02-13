@@ -3,7 +3,8 @@
 -module(fullsimple_core).
 
 -export([eval/2,
-         eval_binding/2]).
+         eval_binding/2,
+         type_of/2]).
 
 -define(syntax, fullsimple_syntax).
 

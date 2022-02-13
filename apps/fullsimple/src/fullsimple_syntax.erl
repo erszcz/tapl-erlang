@@ -10,18 +10,23 @@
 %% Context management
 -export([add_binding/3,
          add_name/2,
-         is_name_bound/2,
          context_length/1,
          empty_context/0,
          get_binding/3,
+         get_type_from_context/3,
+         is_name_bound/2,
          name_to_index/3]).
 
 %% Substitution
--export([term_subst_top/2]).
+-export([term_subst_top/2,
+         type_shift/2]).
 
 %% Printing
--export([format_term/2, format_term/3,
-         format_binding/2, format_binding/3]).
+-export([format_binding/2, format_binding/3,
+         format_doc/2,
+         format_term/2, format_term/3,
+         format_type/2, format_type/3,
+         prettypr_a_term/3]).
 
 -export([term_info/1]).
 
@@ -455,6 +460,17 @@ format_term(Ctx, T) -> format_term(Ctx, T, #{}).
 -spec format_term(context(), term_(), map()) -> string().
 format_term(Ctx, T, Opts) ->
     Doc = prettypr_term(true, Ctx, T),
+    format_doc(Doc, Opts).
+
+-spec format_type(context(), ty()) -> string().
+format_type(Ctx, T) -> format_type(Ctx, T, #{}).
+
+-spec format_type(context(), ty(), map()) -> string().
+format_type(Ctx, T, Opts) ->
+    Doc = prettypr_type(true, Ctx, T),
+    format_doc(Doc, Opts).
+
+format_doc(Doc, Opts) ->
     prettypr:format(Doc,
                     maps:get(paper_width, Opts, 80),
                     maps:get(line_width, Opts, 65)).

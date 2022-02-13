@@ -5,6 +5,7 @@
 -type command() :: fullsimple_syntax:command().
 -type context() :: fullsimple_syntax:context().
 
+-define(core,   fullsimple_core).
 -define(lexer,  fullsimple_lexer).
 -define(parser, fullsimple_parser).
 -define(syntax, fullsimple_syntax).
@@ -36,8 +37,10 @@ process_commands(Ctx, Commands) ->
 process_command(Command, Ctx) ->
     case Command of
         {eval, _Info, T} ->
+            TyT = ?core:type_of(Ctx, T),
             T_ = fullsimple_core:eval(Ctx, T),
-            io:format("~ts\n", [?syntax:format_term(Ctx, T_)]),
+            io:format("~ts: ~ts\n", [?syntax:format_doc(?syntax:prettypr_a_term(true, Ctx, T_), #{}),
+                                     ?syntax:format_type(Ctx, TyT)]),
             Ctx;
         {bind, _Info, X, Bind} ->
             Bind_ = fullsimple_core:eval_binding(Ctx, Bind),
