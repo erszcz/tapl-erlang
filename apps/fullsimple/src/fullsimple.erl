@@ -41,13 +41,13 @@ process_command(Command, Ctx) ->
         {eval, _Info, T} ->
             TyT = ?core:type_of(Ctx, T),
             T_ = fullsimple_core:eval(Ctx, T),
-            io:format("~ts: ~ts\n", [?syntax:format_doc(?syntax:prettypr_a_term(true, Ctx, T_), #{}),
-                                     ?syntax:format_type(Ctx, TyT)]),
+            io:format("~ts : ~ts\n", [?syntax:format_doc(?syntax:prettypr_a_term(true, Ctx, T_), #{}),
+                                      ?syntax:format_type(Ctx, TyT)]),
             Ctx;
         {bind, Info, X, Bind0} ->
             Bind = check_binding(Info, Ctx, Bind0),
             Bind_ = fullsimple_core:eval_binding(Ctx, Bind),
-            io:format("~ts ~ts\n", [X, ?syntax:format_binding(Ctx, Bind_)]),
+            io:format("~ts ~ts\n", [X, format_binding_type(Ctx, Bind_)]),
             ?syntax:add_binding(Ctx, X, Bind_)
     end.
 
@@ -67,4 +67,19 @@ check_binding(Info, Ctx, B) ->
             end;
         ty_var_bind -> ty_var_bind;
         {ty_abb_bind, TyT} -> {ty_abb_bind, TyT}
+    end.
+
+-spec format_binding_type(context(), binding()) -> string().
+format_binding_type(Ctx, B) ->
+    case B of
+        name_bind -> "";
+        ty_var_bind -> "";
+        {var_bind, TyT} ->
+            io_lib:format(": ~ts", [?syntax:format_type(Ctx, TyT)]);
+        {tm_abb_bind, T, MaybeTyT} ->
+            case MaybeTyT of
+                none -> ?syntax:format_type(Ctx, ?core:type_of(Ctx, T));
+                TyT -> ?syntax:format_type(Ctx, TyT)
+            end;
+        {ty_abb_bind, _} -> ":: *"
     end.
