@@ -15,13 +15,13 @@ let rec isnumericval ctx t = match t with
 let rec isval ctx t = match t with
     TmTrue(_)  -> true
   | TmFalse(_) -> true
+  | TmTag(_,l,t1,_) -> isval ctx t1
   | TmString _  -> true
+  | TmUnit(_)  -> true
   | TmFloat _  -> true
   | t when isnumericval ctx t  -> true
   | TmAbs(_,_,_,_) -> true
   | TmRecord(_,fields) -> List.for_all (fun (l,ti) -> isval ctx ti) fields
-  | TmTag(_,l,t1,_) -> isval ctx t1
-  | TmUnit(_)  -> true
   | _ -> false
 
 let rec eval1 ctx t = match t with
@@ -32,6 +32,37 @@ let rec eval1 ctx t = match t with
   | TmIf(fi,t1,t2,t3) ->
       let t1' = eval1 ctx t1 in
       TmIf(fi, t1', t2, t3)
+  | TmTag(fi,l,t1,tyT) ->
+      let t1' = eval1 ctx t1 in
+      TmTag(fi, l, t1',tyT)
+  | TmCase(fi,TmTag(_,li,v11,_),branches) when isval ctx v11->
+      (try 
+         let (x,body) = List.assoc li branches in
+         termSubstTop v11 body
+       with Not_found -> raise NoRuleApplies)
+  | TmCase(fi,t1,branches) ->
+      let t1' = eval1 ctx t1 in
+      TmCase(fi, t1', branches)
+  | TmApp(fi,TmAbs(_,x,tyT11,t12),v2) when isval ctx v2 ->
+      termSubstTop v2 t12
+  | TmApp(fi,v1,t2) when isval ctx v1 ->
+      let t2' = eval1 ctx t2 in
+      TmApp(fi, v1, t2')
+  | TmApp(fi,t1,t2) ->
+      let t1' = eval1 ctx t1 in
+      TmApp(fi, t1', t2)
+  | TmLet(fi,x,v1,t2) when isval ctx v1 ->
+      termSubstTop v1 t2 
+  | TmLet(fi,x,t1,t2) ->
+      let t1' = eval1 ctx t1 in
+      TmLet(fi, x, t1', t2) 
+  | TmFix(fi,v1) as t when isval ctx v1 ->
+      (match v1 with
+         TmAbs(_,_,_,t12) -> termSubstTop t t12
+       | _ -> raise NoRuleApplies)
+  | TmFix(fi,t1) ->
+      let t1' = eval1 ctx t1
+      in TmFix(fi,t1')
   | TmVar(fi,n,_) ->
       (match getbinding fi ctx n with
           TmAbbBind(t,_) -> t 
@@ -58,14 +89,6 @@ let rec eval1 ctx t = match t with
   | TmProj(fi, t1, l) ->
       let t1' = eval1 ctx t1 in
       TmProj(fi, t1', l)
-  | TmApp(fi,TmAbs(_,x,tyT11,t12),v2) when isval ctx v2 ->
-      termSubstTop v2 t12
-  | TmApp(fi,v1,t2) when isval ctx v1 ->
-      let t2' = eval1 ctx t2 in
-      TmApp(fi, v1, t2')
-  | TmApp(fi,t1,t2) ->
-      let t1' = eval1 ctx t1 in
-      TmApp(fi, t1', t2)
   | TmTimesfloat(fi,TmFloat(_,f1),TmFloat(_,f2)) ->
       TmFloat(fi, f1 *. f2)
   | TmTimesfloat(fi,(TmFloat(_,f1) as t1),t2) ->
@@ -91,29 +114,6 @@ let rec eval1 ctx t = match t with
   | TmIsZero(fi,t1) ->
       let t1' = eval1 ctx t1 in
       TmIsZero(fi, t1')
-  | TmTag(fi,l,t1,tyT) ->
-      let t1' = eval1 ctx t1 in
-      TmTag(fi, l, t1',tyT)
-  | TmCase(fi,TmTag(_,li,v11,_),branches) when isval ctx v11->
-      (try 
-         let (x,body) = List.assoc li branches in
-         termSubstTop v11 body
-       with Not_found -> raise NoRuleApplies)
-  | TmCase(fi,t1,branches) ->
-      let t1' = eval1 ctx t1 in
-      TmCase(fi, t1', branches)
-  | TmLet(fi,x,v1,t2) when isval ctx v1 ->
-      termSubstTop v1 t2 
-  | TmLet(fi,x,t1,t2) ->
-      let t1' = eval1 ctx t1 in
-      TmLet(fi, x, t1', t2) 
-  | TmFix(fi,v1) as t when isval ctx v1 ->
-      (match v1 with
-         TmAbs(_,_,_,t12) -> termSubstTop t t12
-       | _ -> raise NoRuleApplies)
-  | TmFix(fi,t1) ->
-      let t1' = eval1 ctx t1
-      in TmFix(fi,t1')
   | _ -> 
       raise NoRuleApplies
 
@@ -139,8 +139,8 @@ let gettyabb ctx i =
   | _ -> raise NoRuleApplies
 
 let rec computety ctx tyT = match tyT with
-    TyRec(x,tyS1) as tyS -> typeSubstTop tyS tyS1
-  | TyVar(i,_) when istyabb ctx i -> gettyabb ctx i
+    TyVar(i,_) when istyabb ctx i -> gettyabb ctx i
+  | TyRec(x,tyS1) as tyS -> typeSubstTop tyS tyS1
   | _ -> raise NoRuleApplies
 
 let rec simplifyty ctx tyT =
@@ -194,40 +194,6 @@ let rec typeof ctx t =
   match t with
     TmInert(fi,tyT) ->
       tyT
-  | TmString _ -> TyString
-  | TmVar(fi,i,_) -> getTypeFromContext fi ctx i
-  | TmAscribe(fi,t1,tyT) ->
-     if tyeqv ctx (typeof ctx t1) tyT then
-       tyT
-     else
-       error fi "body of as-term does not have the expected type"
-  | TmRecord(fi, fields) ->
-      let fieldtys = 
-        List.map (fun (li,ti) -> (li, typeof ctx ti)) fields in
-      TyRecord(fieldtys)
-  | TmProj(fi, t1, l) ->
-      (match simplifyty ctx (typeof ctx t1) with
-          TyRecord(fieldtys) ->
-            (try List.assoc l fieldtys
-             with Not_found -> error fi ("label "^l^" not found"))
-        | _ -> error fi "Expected record type")
-  | TmAbs(fi,x,tyT1,t2) ->
-      let ctx' = addbinding ctx x (VarBind(tyT1)) in
-      let tyT2 = typeof ctx' t2 in
-      TyArr(tyT1, typeShift (-1) tyT2)
-  | TmApp(fi,t1,t2) ->
-      let tyT1 = typeof ctx t1 in
-      let tyT2 = typeof ctx t2 in
-      (match simplifyty ctx tyT1 with
-          TyArr(tyT11,tyT12) ->
-            if tyeqv ctx tyT2 tyT11 then tyT12
-            else error fi "parameter type mismatch"
-        | _ -> error fi "arrow type expected")
-  | TmFloat _ -> TyFloat
-  | TmTimesfloat(fi,t1,t2) ->
-      if tyeqv ctx (typeof ctx t1) TyFloat
-      && tyeqv ctx (typeof ctx t2) TyFloat then TyFloat
-      else error fi "argument of timesfloat is not a number"
   | TmTrue(fi) -> 
       TyBool
   | TmFalse(fi) -> 
@@ -238,17 +204,6 @@ let rec typeof ctx t =
        if tyeqv ctx tyT2 (typeof ctx t3) then tyT2
        else error fi "arms of conditional have different types"
      else error fi "guard of conditional not a boolean"
-  | TmZero(fi) ->
-      TyNat
-  | TmSucc(fi,t1) ->
-      if tyeqv ctx (typeof ctx t1) TyNat then TyNat
-      else error fi "argument of succ is not a number"
-  | TmPred(fi,t1) ->
-      if tyeqv ctx (typeof ctx t1) TyNat then TyNat
-      else error fi "argument of pred is not a number"
-  | TmIsZero(fi,t1) ->
-      if tyeqv ctx (typeof ctx t1) TyNat then TyBool
-      else error fi "argument of iszero is not a number"
   | TmCase(fi, t, cases) ->
       (match simplifyty ctx (typeof ctx t) with
          TyVariant(fieldtys) ->
@@ -286,11 +241,23 @@ let rec typeof ctx t =
                  else error fi "field does not have expected type"
              with Not_found -> error fi ("label "^li^" not found"))
         | _ -> error fi "Annotation is not a variant type")
+  | TmVar(fi,i,_) -> getTypeFromContext fi ctx i
+  | TmAbs(fi,x,tyT1,t2) ->
+      let ctx' = addbinding ctx x (VarBind(tyT1)) in
+      let tyT2 = typeof ctx' t2 in
+      TyArr(tyT1, typeShift (-1) tyT2)
+  | TmApp(fi,t1,t2) ->
+      let tyT1 = typeof ctx t1 in
+      let tyT2 = typeof ctx t2 in
+      (match simplifyty ctx tyT1 with
+          TyArr(tyT11,tyT12) ->
+            if tyeqv ctx tyT2 tyT11 then tyT12
+            else error fi "parameter type mismatch"
+        | _ -> error fi "arrow type expected")
   | TmLet(fi,x,t1,t2) ->
      let tyT1 = typeof ctx t1 in
      let ctx' = addbinding ctx x (VarBind(tyT1)) in         
      typeShift (-1) (typeof ctx' t2)
-  | TmUnit(fi) -> TyUnit
   | TmFix(fi, t1) ->
       let tyT1 = typeof ctx t1 in
       (match simplifyty ctx tyT1 with
@@ -298,3 +265,36 @@ let rec typeof ctx t =
              if tyeqv ctx tyT12 tyT11 then tyT12
              else error fi "result of body not compatible with domain"
          | _ -> error fi "arrow type expected")
+  | TmString _ -> TyString
+  | TmUnit(fi) -> TyUnit
+  | TmAscribe(fi,t1,tyT) ->
+     if tyeqv ctx (typeof ctx t1) tyT then
+       tyT
+     else
+       error fi "body of as-term does not have the expected type"
+  | TmRecord(fi, fields) ->
+      let fieldtys = 
+        List.map (fun (li,ti) -> (li, typeof ctx ti)) fields in
+      TyRecord(fieldtys)
+  | TmProj(fi, t1, l) ->
+      (match simplifyty ctx (typeof ctx t1) with
+          TyRecord(fieldtys) ->
+            (try List.assoc l fieldtys
+             with Not_found -> error fi ("label "^l^" not found"))
+        | _ -> error fi "Expected record type")
+  | TmFloat _ -> TyFloat
+  | TmTimesfloat(fi,t1,t2) ->
+      if tyeqv ctx (typeof ctx t1) TyFloat
+      && tyeqv ctx (typeof ctx t2) TyFloat then TyFloat
+      else error fi "argument of timesfloat is not a number"
+  | TmZero(fi) ->
+      TyNat
+  | TmSucc(fi,t1) ->
+      if tyeqv ctx (typeof ctx t1) TyNat then TyNat
+      else error fi "argument of succ is not a number"
+  | TmPred(fi,t1) ->
+      if tyeqv ctx (typeof ctx t1) TyNat then TyNat
+      else error fi "argument of pred is not a number"
+  | TmIsZero(fi,t1) ->
+      if tyeqv ctx (typeof ctx t1) TyNat then TyBool
+      else error fi "argument of iszero is not a number"
