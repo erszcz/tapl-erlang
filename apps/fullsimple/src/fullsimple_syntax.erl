@@ -33,6 +33,7 @@
 -export_type([binding/0,
               command/0,
               context/0,
+              info/0,
               term_/0,
               ty/0]).
 

@@ -4,13 +4,16 @@
 
 -export([eval/2,
          eval_binding/2,
-         type_of/2]).
+         type_of/2,
+         types_equiv/3,
+         type_error/2, type_error/3]).
 
 -define(syntax, fullsimple_syntax).
 
 -type binding() :: ?syntax:binding().
 -type context() :: ?syntax:context().
 -type index()   :: ?syntax:index().
+-type info()    :: ?syntax:info().
 -type term_()   :: ?syntax:term_().
 -type ty()      :: ?syntax:ty().
 
@@ -455,12 +458,15 @@ type_of(Ctx, T) ->
             end
     end.
 
+-spec type_error(info(), string()) -> none().
 type_error(Info, Error) ->
     Format = case Info of
                  {_,_} -> "~p:~p: ~ts\n";
                  _ when is_integer(Info) -> "~p: ~ts\n"
              end,
-    io:format(Format, [Info, Error]).
+    io:format(Format, [Info, Error]),
+    erlang:error({type_error, Info, Error}).
 
+-spec type_error(info(), string(), [any()]) -> none().
 type_error(Info, Format, Args) ->
     type_error(Info, io_lib:format(Format, Args)).

@@ -2,8 +2,10 @@
 
 -export([main/1]).
 
+-type binding() :: fullsimple_syntax:binding().
 -type command() :: fullsimple_syntax:command().
 -type context() :: fullsimple_syntax:context().
+-type info()    :: fullsimple_syntax:info().
 
 -define(core,   fullsimple_core).
 -define(lexer,  fullsimple_lexer).
@@ -42,8 +44,27 @@ process_command(Command, Ctx) ->
             io:format("~ts: ~ts\n", [?syntax:format_doc(?syntax:prettypr_a_term(true, Ctx, T_), #{}),
                                      ?syntax:format_type(Ctx, TyT)]),
             Ctx;
-        {bind, _Info, X, Bind} ->
+        {bind, Info, X, Bind0} ->
+            Bind = check_binding(Info, Ctx, Bind0),
             Bind_ = fullsimple_core:eval_binding(Ctx, Bind),
             io:format("~ts ~ts\n", [X, ?syntax:format_binding(Ctx, Bind_)]),
             ?syntax:add_binding(Ctx, X, Bind_)
+    end.
+
+-spec check_binding(info(), context(), binding()) -> binding().
+check_binding(Info, Ctx, B) ->
+    case B of
+        name_bind -> name_bind;
+        {var_bind, TyT} -> {var_bind, TyT};
+        {tm_abb_bind, T, none} -> {tm_abb_bind, T, ?core:type_of(Ctx, T)};
+        {tm_abb_bind, T, TyT} ->
+            TyT_ = ?core:type_of(Ctx, T),
+            case ?core:types_equiv(Ctx, TyT_, TyT) of
+                true ->
+                    {tm_abb_bind, T, TyT};
+                false ->
+                    ?core:type_error(Info, "type of binding does not match declared type")
+            end;
+        ty_var_bind -> ty_var_bind;
+        {ty_abb_bind, TyT} -> {ty_abb_bind, TyT}
     end.
