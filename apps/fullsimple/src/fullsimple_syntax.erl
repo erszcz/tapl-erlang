@@ -307,14 +307,14 @@ term_map(OnVarF, OnTypeF, C, T) ->
             {case_, FInfo, term_map(OnVarF, OnTypeF, C, T1), NewCases}
     end.
 
--spec type_shift_above(_, _, ty()) -> ty().
+-spec type_shift_above(integer(), non_neg_integer(), ty()) -> ty().
 type_shift_above(D, C, Ty) ->
     type_map(fun
                  (C1, X, N) when X >= C1 -> {var, X+D, N+D};
                  ( _, X, N) -> {var, X, N+D}
              end, C, Ty).
 
--spec term_shift_above(pos_integer(), non_neg_integer(), term_()) -> term_().
+-spec term_shift_above(integer(), non_neg_integer(), term_()) -> term_().
 term_shift_above(D, C, T) ->
     term_map(fun
                  (FInfo, C1, X, N) when X >= C1 -> {var, FInfo, X+D, N+D};
@@ -323,11 +323,11 @@ term_shift_above(D, C, T) ->
              fun (C1, Ty) -> type_shift_above(D, C1, Ty) end,
              C, T).
 
--spec term_shift(pos_integer(), term_()) -> term_().
+-spec term_shift(integer(), term_()) -> term_().
 term_shift(D, T) ->
     term_shift_above(D, 0, T).
 
--spec type_shift(pos_integer(), ty()) -> ty().
+-spec type_shift(integer(), ty()) -> ty().
 type_shift(D, Ty) -> type_shift_above(D, 0, Ty).
 
 -spec binding_shift(_, binding()) -> binding().
