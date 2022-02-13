@@ -472,7 +472,7 @@ prettypr_arrow_type(Outer, Ctx, Ty) ->
     case Ty of
         {arr, Ty1, Ty2} ->
             prettypr:par([prettypr_a_type(false, Ctx, Ty1),
-                          prettypr:text(" -> "),
+                          prettypr:text("->"),
                           prettypr_a_type(false, Ctx, Ty2)], 2);
         _ ->
             prettypr_a_type(Outer, Ctx, Ty)
@@ -495,17 +495,29 @@ prettypr_a_type(Outer, Ctx, Ty) ->
             prettypr:text(B);
         bool ->
             prettypr:text("Bool");
+        {variant, []} ->
+            prettypr:text("<>");
         {variant, Fields} ->
-            FieldsD = lists:join(prettypr:text(","),
-                                 [ prettypr:par([prettypr:text(Label),
-                                                 prettypr:text(":"),
-                                                 prettypr_type(false, Ctx, Ty1)], 2)
-                                   || {Label, Ty1} <- Fields ]),
-            prettypr:par([prettypr:text("<")] ++ FieldsD ++ [prettypr:text(">")], 2);
+            NFields = length(Fields),
+            FieldsD = [ prettypr:par([prettypr:beside(prettypr:text(Label),
+                                                      prettypr:text(":")),
+                                      if
+                                          I /= NFields ->
+                                              prettypr:beside(prettypr_type(false, Ctx, Ty1),
+                                                              prettypr:text(","));
+                                          I == NFields ->
+                                              prettypr_type(false, Ctx, Ty1)
+                                      end], 2)
+                        || {I, {Label, Ty1}} <- lists:zip(lists:seq(1, NFields), Fields) ],
+            prettypr:beside(prettypr:beside(prettypr:text("<"),
+                                            prettypr:par(FieldsD)),
+                            prettypr:text(">"));
         string ->
             prettypr:text("String");
         unit ->
             prettypr:text("Unit");
+        {record, []} ->
+            prettypr:text("{}");
         {record, Fields} ->
             FieldsD = lists:join(prettypr:text(","),
                                  [ prettypr:par([prettypr:text(Label),
@@ -555,10 +567,10 @@ prettypr_term(Outer, Ctx, T) ->
         {abs, _Info, X, Ty1, T2} ->
             {NewCtx, X2} = pick_fresh_name(Ctx, X),
             prettypr:par([prettypr:text("lambda"),
-                          prettypr:text(X2),
-                          prettypr:text(":"),
-                          prettypr_type(false, Ctx, Ty1),
-                          prettypr:text("."),
+                          prettypr:beside(prettypr:text(X2),
+                                          prettypr:text(":")),
+                          prettypr:beside(prettypr_type(false, Ctx, Ty1),
+                                          prettypr:text(".")),
                           prettypr_term(Outer, NewCtx, T2)], 2);
         {let_, _Info, X, T1, T2} ->
             prettypr:par([prettypr:text(string:join(["let ", X, " = "], "")),
@@ -692,13 +704,13 @@ prettypr_binding(Ctx, B) ->
         ty_var_bind ->
             prettypr:empty();
         {var_bind, Ty} ->
-            prettypr:follow(prettypr:text(": "),
+            prettypr:follow(prettypr:text(":"),
                             prettypr_type(Ctx, Ty), 2);
         {tm_abb_bind, T, _Ty} ->
-            prettypr:follow(prettypr:text("= "),
+            prettypr:follow(prettypr:text("="),
                             prettypr_term(Ctx, T), 2);
         {ty_abb_bind, Ty} ->
-            prettypr:follow(prettypr:text("= "),
+            prettypr:follow(prettypr:text("="),
                             prettypr_type(Ctx, Ty), 2)
     end.
 
