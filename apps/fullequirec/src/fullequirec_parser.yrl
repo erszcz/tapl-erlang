@@ -174,7 +174,10 @@ ATerm -> lparen TermSeq rparen      : '$2'.
 ATerm -> inert lsquare Type rsquare : fun ( Ctx) -> term_({inert, info('$1'), '$3'(Ctx)}) end.
 ATerm -> true                       : fun (_Ctx) -> term_({true, info('$1')}) end.
 ATerm -> false                      : fun (_Ctx) -> term_({false, info('$1')}) end.
-ATerm -> lt lcid eq Term gt as Type : fun ( Ctx) -> term_({tag, info('$1'), '$4'(Ctx), '$7'(Ctx)}) end.
+ATerm -> lt lcid eq Term gt as Type :
+         fun ( Ctx) ->
+                 term_({tag, info('$1'), string_value('$2'), '$4'(Ctx), '$7'(Ctx)})
+         end.
 ATerm -> lcid                       : fun ( Ctx) ->
                                             Index = name_to_index(info('$1'), Ctx, string_value('$1')),
                                             term_({var, info('$1'), Index, context_length(Ctx)})
