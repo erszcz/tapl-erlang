@@ -5,29 +5,34 @@ open Support.Error
 
 (* Data type definitions *)
 type ty =
-    TyId of string
-  | TyVar of int * int
-  | TyRecord of (string * ty) list
+    TyVar of int * int
+  | TyId of string
   | TyArr of ty * ty
-  | TyFloat
-  | TyRec of string * ty
-  | TyNat
-  | TyVariant of (string * ty) list
-  | TyString
-  | TyBool
   | TyUnit
+  | TyRecord of (string * ty) list
+  | TyRec of string * ty
+  | TyVariant of (string * ty) list
+  | TyBool
+  | TyString
+  | TyFloat
+  | TyNat
 
 type term =
     TmTrue of info
   | TmFalse of info
   | TmIf of info * term * term * term
+  | TmCase of info * term * (string * (string * term)) list
+  | TmTag of info * string * term * ty
   | TmVar of info * int * int
+  | TmAbs of info * string * ty * term
+  | TmApp of info * term * term
+  | TmLet of info * string * term * term
+  | TmFix of info * term
   | TmString of info * string
+  | TmUnit of info
   | TmAscribe of info * term * ty
   | TmRecord of info * (string * term) list
   | TmProj of info * term * string
-  | TmAbs of info * string * ty * term
-  | TmApp of info * term * term
   | TmFloat of info * float
   | TmTimesfloat of info * term * term
   | TmZero of info
@@ -35,17 +40,12 @@ type term =
   | TmPred of info * term
   | TmIsZero of info * term
   | TmInert of info * ty
-  | TmCase of info * term * (string * (string * term)) list
-  | TmTag of info * string * term * ty
-  | TmLet of info * string * term * term
-  | TmUnit of info
-  | TmFix of info * term
 
 type binding =
     NameBind 
-  | TmAbbBind of term * (ty option)
-  | VarBind of ty
   | TyVarBind
+  | VarBind of ty
+  | TmAbbBind of term * (ty option)
   | TyAbbBind of ty
 
 type command =

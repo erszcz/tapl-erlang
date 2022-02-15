@@ -152,13 +152,14 @@ let rec simplifyty ctx tyT =
 let rec tyeqv seen ctx tyS tyT =
   List.mem (tyS,tyT) seen 
   || match (tyS,tyT) with
-        (TyString,TyString) -> true
-     | (TyFloat,TyFloat) -> true
+       (TyString,TyString) -> true
+     | (TyUnit,TyUnit) -> true
      | (TyRec(x,tyS1),_) ->
           tyeqv ((tyS,tyT)::seen) ctx (typeSubstTop tyS tyS1) tyT
      | (_,TyRec(x,tyT1)) ->
           tyeqv ((tyS,tyT)::seen) ctx tyS (typeSubstTop tyT tyT1)
      | (TyId(b1),TyId(b2)) -> b1=b2
+     | (TyFloat,TyFloat) -> true
      | (TyVar(i,_), _) when istyabb ctx i ->
          tyeqv seen ctx (gettyabb ctx i) tyT
      | (_, TyVar(i,_)) when istyabb ctx i ->
@@ -183,7 +184,6 @@ let rec tyeqv seen ctx tyS tyT =
                (fun (li1,tyTi1) (li2,tyTi2) ->
                   (li1=li2) && tyeqv seen ctx tyTi1 tyTi2)
                fields1 fields2
-     | (TyUnit,TyUnit) -> true
      | _ -> false
 
 let tyeqv ctx tyS tyT = tyeqv [] ctx tyS tyT

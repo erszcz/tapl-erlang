@@ -63,12 +63,12 @@ let checkbinding fi ctx b = match b with
 
 let prbindingty ctx b = match b with
     NameBind -> ()
+  | TyVarBind -> ()
   | VarBind(tyT) -> pr ": "; printty ctx tyT 
   | TmAbbBind(t, tyT_opt) -> pr ": ";
      (match tyT_opt with
          None -> printty ctx (typeof ctx t)
        | Some(tyT) -> printty ctx tyT)
-  | TyVarBind -> ()
   | TyAbbBind(tyT) -> pr ":: *"
 
 let rec process_command ctx cmd = match cmd with

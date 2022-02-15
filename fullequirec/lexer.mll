@@ -11,32 +11,32 @@ open Support.Error
 
 let reservedWords = [
   (* Keywords *)
+  ("type", fun i -> Parser.TYPE i);
   ("inert", fun i -> Parser.INERT i);
   ("if", fun i -> Parser.IF i);
   ("then", fun i -> Parser.THEN i);
   ("else", fun i -> Parser.ELSE i);
   ("true", fun i -> Parser.TRUE i);
   ("false", fun i -> Parser.FALSE i);
-  ("String", fun i -> Parser.USTRING i);
+  ("Bool", fun i -> Parser.BOOL i);
+  ("case", fun i -> Parser.CASE i);
+  ("of", fun i -> Parser.OF i);
   ("as", fun i -> Parser.AS i);
   ("lambda", fun i -> Parser.LAMBDA i);
+  ("let", fun i -> Parser.LET i);
+  ("in", fun i -> Parser.IN i);
+  ("fix", fun i -> Parser.FIX i);
+  ("letrec", fun i -> Parser.LETREC i);
+  ("String", fun i -> Parser.USTRING i);
+  ("unit", fun i -> Parser.UNIT i);
+  ("Unit", fun i -> Parser.UUNIT i);
   ("timesfloat", fun i -> Parser.TIMESFLOAT i);
   ("Float", fun i -> Parser.UFLOAT i);
-  ("type", fun i -> Parser.TYPE i);
   ("Rec", fun i -> Parser.REC i);
   ("succ", fun i -> Parser.SUCC i);
   ("pred", fun i -> Parser.PRED i);
   ("iszero", fun i -> Parser.ISZERO i);
-  ("Bool", fun i -> Parser.BOOL i);
   ("Nat", fun i -> Parser.NAT i);
-  ("case", fun i -> Parser.CASE i);
-  ("of", fun i -> Parser.OF i);
-  ("let", fun i -> Parser.LET i);
-  ("in", fun i -> Parser.IN i);
-  ("unit", fun i -> Parser.UNIT i);
-  ("Unit", fun i -> Parser.UUNIT i);
-  ("fix", fun i -> Parser.FIX i);
-  ("letrec", fun i -> Parser.LETREC i);
   
   (* Symbols *)
   ("_", fun i -> Parser.USCORE i);
