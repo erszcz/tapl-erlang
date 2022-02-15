@@ -48,6 +48,7 @@
             | {arr, ty(), ty()}
             | unit
             | {record, [{string(), ty()}]}
+            | {rec, string(), ty()}
             | {variant, [{string(), ty()}]}
             | bool
             | string
@@ -110,6 +111,7 @@ ty(Ty) ->
         {arr, _, _} -> Ty;
         unit -> Ty;
         {record, _} -> Ty;
+        {rec, _, _} -> Ty;
         {variant, _} -> Ty;
         bool -> Ty;
         string -> Ty;
@@ -239,7 +241,7 @@ name_to_index(FInfo, Ctx, X) ->
 %%
 
 -spec type_map(OnTyVarF, _, ty()) -> ty() when
-      OnTyVarF :: fun((_, _, integer()) -> ty()).
+      OnTyVarF :: fun((integer(), integer(), integer()) -> ty()).
 type_map(OnTyVarF, C, Ty) ->
     case Ty of
         {var, X, N} -> OnTyVarF(C, X, N);
@@ -248,6 +250,7 @@ type_map(OnTyVarF, C, Ty) ->
         unit -> Ty;
         {record, FieldTys} ->
             {record, [ {L, type_map(OnTyVarF, C, FTy)} || {L, FTy} <- FieldTys ]};
+        {rec, X, TyT} -> {rec, X, type_map(OnTyVarF, C+1, TyT)};
         float -> Ty;
         bool -> Ty;
         nat -> Ty;
@@ -482,7 +485,16 @@ prettypr_type(Ctx, Ty) ->
 
 -spec prettypr_type(boolean(), context(), ty()) -> prettypr:document().
 prettypr_type(Outer, Ctx, Ty) ->
-    prettypr_arrow_type(Outer, Ctx, Ty).
+    case Ty of
+        {rec, X, TyT} ->
+            {NewCtx, X2} = pick_fresh_name(Ctx, X),
+            prettypr:par([prettypr:text("Rec"),
+                          prettypr:beside(prettypr:text(X2),
+                                          prettypr:text(".")),
+                          prettypr_type(false, NewCtx, TyT)], 2);
+        _ ->
+            prettypr_arrow_type(Outer, Ctx, Ty)
+    end.
 
 -spec prettypr_arrow_type(boolean(), context(), ty()) -> prettypr:document().
 prettypr_arrow_type(Outer, Ctx, Ty) ->
