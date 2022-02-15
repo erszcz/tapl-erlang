@@ -220,6 +220,8 @@ compute_type(Ctx, Ty) ->
                 true -> get_ty_abb(Ctx, Index);
                 false -> throw(no_rule_applies)
             end;
+        {rec, X, TyS1} = TyS ->
+            ?syntax:type_subst_top(TyS, TyS1);
         _ ->
             throw(no_rule_applies)
     end.
@@ -245,21 +247,27 @@ types_equiv(Ctx, Seen, TyS, TyT) ->
             case {TyS, TyT} of
                 {string, string} -> true;
                 {unit, unit} -> true;
+                {{rec, X, TyS1}, _} ->
+                    types_equiv(Ctx, maps:put({TyS, TyT}, true, Seen),
+                                ?syntax:type_subst_top(TyS, TyS1), TyT);
+                {_, {rec, X, TyT1}} ->
+                    types_equiv(Ctx, maps:put({TyS, TyT}, true, Seen),
+                                TyS, ?syntax:type_subst_top(TyT, TyT1));
                 {{id, IdS}, {id, IdT}} -> IdS == IdT;
                 {float, float} -> true;
                 {{var, IndexS, _}, {var, IndexT, _}} ->
                     case {is_ty_abb(Ctx, IndexS), is_ty_abb(Ctx, IndexT)} of
                         {true, _} ->
-                            types_equiv(Ctx, get_ty_abb(Ctx, IndexS), TyT);
+                            types_equiv(Ctx, Seen, get_ty_abb(Ctx, IndexS), TyT);
                         {_, true} ->
-                            types_equiv(Ctx, TyS, get_ty_abb(Ctx, IndexT));
+                            types_equiv(Ctx, Seen, TyS, get_ty_abb(Ctx, IndexT));
                         _ ->
                             IndexS == IndexT
                     end;
                 {{arr, TyS1, TyS2}, {arr, TyT1, TyT2}} ->
-                    types_equiv(Ctx, TyS1, TyT1)
+                    types_equiv(Ctx, Seen, TyS1, TyT1)
                     andalso
-                    types_equiv(Ctx, TyS2, TyT2);
+                    types_equiv(Ctx, Seen, TyS2, TyT2);
                 {bool, bool} -> true;
                 {nat, nat} -> true;
                 {{record, Fields1}, {record, Fields2}} ->
@@ -268,7 +276,7 @@ types_equiv(Ctx, Seen, TyS, TyT) ->
                     lists:all(fun ({Label2, Ty2}) ->
                                       case lists:keyfind(Label2, 1, Fields1) of
                                           {Label2, Ty1} ->
-                                              types_equiv(Ctx, Ty1, Ty2);
+                                              types_equiv(Ctx, Seen, Ty1, Ty2);
                                           false ->
                                               false
                                       end
@@ -278,7 +286,7 @@ types_equiv(Ctx, Seen, TyS, TyT) ->
                     length(Fields1) == length(Fields2)
                     andalso
                     lists:all(fun ({{L1, Ty1}, {L2, Ty2}}) ->
-                                      L1 == L2 andalso types_equiv(Ctx, Ty1, Ty2)
+                                      L1 == L2 andalso types_equiv(Ctx, Seen, Ty1, Ty2)
                               end,
                               lists:zip(Fields1, Fields2));
                 _ ->

@@ -19,7 +19,8 @@
 
 %% Substitution
 -export([term_subst_top/2,
-         type_shift/2]).
+         type_shift/2,
+         type_subst_top/2]).
 
 %% Printing
 -export([format_binding/2, format_binding/3,
@@ -377,6 +378,7 @@ type_subst(TyS, J, TyT) ->
                  ( _, X, N) -> {var, X, N}
              end, J, TyT).
 
+-spec type_subst_top(ty(), ty()) -> ty().
 type_subst_top(TyS, TyT) ->
     type_shift(-1, type_subst(type_shift(1, TyS), 0, TyT)).
 
