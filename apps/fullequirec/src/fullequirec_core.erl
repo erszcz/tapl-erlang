@@ -234,50 +234,56 @@ simplify_type(Ctx, Ty) ->
     end.
 
 -spec types_equiv(context(), ty(), ty()) -> boolean().
-types_equiv(Ctx, TyS0, TyT0) ->
-    TyS = simplify_type(Ctx, TyS0),
-    TyT = simplify_type(Ctx, TyT0),
-    case {TyS, TyT} of
-        {string, string} -> true;
-        {unit, unit} -> true;
-        {{id, IdS}, {id, IdT}} -> IdS == IdT;
-        {float, float} -> true;
-        {{var, IndexS, _}, {var, IndexT, _}} ->
-            case {is_ty_abb(Ctx, IndexS), is_ty_abb(Ctx, IndexT)} of
-                {true, _} ->
-                    types_equiv(Ctx, get_ty_abb(Ctx, IndexS), TyT);
-                {_, true} ->
-                    types_equiv(Ctx, TyS, get_ty_abb(Ctx, IndexT));
+types_equiv(Ctx, TyS, TyT) ->
+    types_equiv(Ctx, #{}, TyS, TyT).
+
+-spec types_equiv(context(), map(), ty(), ty()) -> boolean().
+types_equiv(Ctx, Seen, TyS, TyT) ->
+    case maps:get({TyS, TyT}, Seen, false) of
+        true -> true;
+        false ->
+            case {TyS, TyT} of
+                {string, string} -> true;
+                {unit, unit} -> true;
+                {{id, IdS}, {id, IdT}} -> IdS == IdT;
+                {float, float} -> true;
+                {{var, IndexS, _}, {var, IndexT, _}} ->
+                    case {is_ty_abb(Ctx, IndexS), is_ty_abb(Ctx, IndexT)} of
+                        {true, _} ->
+                            types_equiv(Ctx, get_ty_abb(Ctx, IndexS), TyT);
+                        {_, true} ->
+                            types_equiv(Ctx, TyS, get_ty_abb(Ctx, IndexT));
+                        _ ->
+                            IndexS == IndexT
+                    end;
+                {{arr, TyS1, TyS2}, {arr, TyT1, TyT2}} ->
+                    types_equiv(Ctx, TyS1, TyT1)
+                    andalso
+                    types_equiv(Ctx, TyS2, TyT2);
+                {bool, bool} -> true;
+                {nat, nat} -> true;
+                {{record, Fields1}, {record, Fields2}} ->
+                    length(Fields1) == length(Fields2)
+                    andalso
+                    lists:all(fun ({Label2, Ty2}) ->
+                                      case lists:keyfind(Label2, 1, Fields1) of
+                                          {Label2, Ty1} ->
+                                              types_equiv(Ctx, Ty1, Ty2);
+                                          false ->
+                                              false
+                                      end
+                              end,
+                              Fields2);
+                {{variant, Fields1}, {variant, Fields2}} ->
+                    length(Fields1) == length(Fields2)
+                    andalso
+                    lists:all(fun ({{L1, Ty1}, {L2, Ty2}}) ->
+                                      L1 == L2 andalso types_equiv(Ctx, Ty1, Ty2)
+                              end,
+                              lists:zip(Fields1, Fields2));
                 _ ->
-                    IndexS == IndexT
-            end;
-        {{arr, TyS1, TyS2}, {arr, TyT1, TyT2}} ->
-            types_equiv(Ctx, TyS1, TyT1)
-            andalso
-            types_equiv(Ctx, TyS2, TyT2);
-        {bool, bool} -> true;
-        {nat, nat} -> true;
-        {{record, Fields1}, {record, Fields2}} ->
-            length(Fields1) == length(Fields2)
-            andalso
-            lists:all(fun ({Label2, Ty2}) ->
-                        case lists:keyfind(Label2, 1, Fields1) of
-                            {Label2, Ty1} ->
-                                types_equiv(Ctx, Ty1, Ty2);
-                            false ->
-                                false
-                        end
-                      end,
-                      Fields2);
-        {{variant, Fields1}, {variant, Fields2}} ->
-            length(Fields1) == length(Fields2)
-            andalso
-            lists:all(fun ({{L1, Ty1}, {L2, Ty2}}) ->
-                        L1 == L2 andalso types_equiv(Ctx, Ty1, Ty2)
-                      end,
-                      lists:zip(Fields1, Fields2));
-        _ ->
-            false
+                    false
+            end
     end.
 
 -spec type_of(context(), term_()) -> ty().
@@ -458,7 +464,7 @@ type_of(Ctx, T) ->
             end
     end.
 
--spec type_error(info(), io_lib:chars()) -> none().
+-spec type_error(info(), _) -> none().
 type_error(Info, Error) ->
     Format = case Info of
                  {_,_} -> "~p:~p: ~ts\n";
