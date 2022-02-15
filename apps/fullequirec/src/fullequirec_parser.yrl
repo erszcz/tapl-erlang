@@ -4,7 +4,7 @@ Nonterminals
 
 Terminals
     inert if then else true false bool case of as lambda let in fix letrec
-    ustring unit uunit timesfloat ufloat succ pred iszero nat
+    ustring unit uunit timesfloat ufloat rec succ pred iszero nat
     ucid lcid int_value float_value string_value
     comma comment dot eq lcurly lparen rcurly rparen semi uscore
     arrow colon ddarrow ft gt lsquare lt rsquare vbar.
@@ -54,6 +54,10 @@ Binder -> eq Term       : fun (Ctx) -> binding({tm_abb_bind, '$2'(Ctx), none}) e
 
 %% All type expressions
 Type -> ArrowType               : '$1'.
+Type -> rec ucid dot Type       : fun (Ctx) ->
+                                          NewCtx = add_name(Ctx, string_value('$2')),
+                                          ty({rec, string_value('$2'), '$4'(NewCtx)})
+                                  end.
 
 
 %% Atomic types are those that never need extra parentheses
@@ -211,7 +215,7 @@ Erlang code.
                              name_to_index/3,
                              term_info/1]).
 
-int_value({int_value, Info, S}) when is_list(S) -> list_to_integer(S).
+int_value({int_value, _Info, S}) when is_list(S) -> list_to_integer(S).
 
 int_value_term({int_value, Info, S}) when is_list(S) -> int_value(list_to_integer(S), Info).
 

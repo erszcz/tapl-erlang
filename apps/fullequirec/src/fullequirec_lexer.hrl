@@ -67,6 +67,7 @@ reserved_word(Chars) ->
         "Unit" -> 'uunit';
         "timesfloat" -> 'timesfloat';
         "Float" -> 'ufloat';
+        "Rec" -> 'rec';
         "succ" -> 'succ';
         "pred" -> 'pred';
         "iszero" -> 'iszero';
