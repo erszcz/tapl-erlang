@@ -199,17 +199,17 @@ Field -> Term           : fun (Ctx, I) -> {integer_to_list(I), '$1'(Ctx)} end.
 
 Erlang code.
 
--import(fullsimple_syntax, [ty/1,
-                            binding/1,
-                            command/1,
-                            info/1,
-                            term_/1]).
+-import(fullequirec_syntax, [ty/1,
+                             binding/1,
+                             command/1,
+                             info/1,
+                             term_/1]).
 
--import(fullsimple_syntax, [add_name/2,
-                            is_name_bound/2,
-                            context_length/1,
-                            name_to_index/3,
-                            term_info/1]).
+-import(fullequirec_syntax, [add_name/2,
+                             is_name_bound/2,
+                             context_length/1,
+                             name_to_index/3,
+                             term_info/1]).
 
 int_value({int_value, Info, S}) when is_list(S) -> list_to_integer(S).
 

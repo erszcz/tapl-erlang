@@ -1,4 +1,4 @@
--module(fullsimple_parser_tests).
+-module(fullequirec_parser_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -8,8 +8,8 @@ data() ->
 
 parser_test() ->
     Data = data(),
-    {ok, Tokens, _} = fullsimple_lexer:string(Data),
-    {ok, ParserF} = fullsimple_parser:parse(Tokens),
+    {ok, Tokens, _} = fullequirec_lexer:string(Data),
+    {ok, ParserF} = fullequirec_parser:parse(Tokens),
     ?assertEqual({[{eval,{4,2},
                     {abs,{4,2},"x",{variant,[{"a",bool},{"b",bool}]},{var,{4,28},0,1}}},
                    {eval,{7,1},{string,{7,1},"hello"}},

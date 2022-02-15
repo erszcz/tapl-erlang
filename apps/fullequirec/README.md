@@ -1,1 +1,1 @@
-# fullsimple
+# fullequirec

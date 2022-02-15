@@ -1,4 +1,4 @@
--module(fullsimple_syntax).
+-module(fullequirec_syntax).
 
 %% Constructors
 -export([ty/1,

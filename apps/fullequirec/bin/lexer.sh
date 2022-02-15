@@ -8,10 +8,10 @@ INPUT=$1
 read CODE << EOF
 Input = "$INPUT", \
 Data = unicode:characters_to_list(element(2, file:read_file(Input))), \
-fullsimple_lexer:reset(), \
-Lexed = fullsimple_lexer:string(Data), \
+fullequirec_lexer:reset(), \
+Lexed = fullequirec_lexer:string(Data), \
 io:format("~p\\\\n", [Lexed]), \
 halt().
 EOF
 
-erl -pa _build/default/lib/fullsimple/ebin -noinput -noshell -eval "$CODE"
+erl -pa _build/default/lib/fullequirec/ebin -noinput -noshell -eval "$CODE"
