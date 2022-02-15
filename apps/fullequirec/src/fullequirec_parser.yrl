@@ -7,7 +7,7 @@ Terminals
     ustring unit uunit timesfloat ufloat rec succ pred iszero nat
     ucid lcid int_value float_value string_value
     comma comment dot eq lcurly lparen rcurly rparen semi uscore
-    arrow colon ddarrow ft gt lsquare lt rsquare vbar.
+    arrow colon ddarrow gt lsquare lt rsquare vbar.
 
 
 %% The top level of a file is a sequence of commands, each terminated by a semicolon.
@@ -189,7 +189,7 @@ ATerm -> int_value                  : fun (_Ctx) -> term_(int_value_term('$1')) 
 Cases -> Case                   : fun (Ctx) -> ['$1'(Ctx)] end.
 Cases -> Case vbar Cases        : fun (Ctx) -> ['$1'(Ctx) | '$3'(Ctx)] end.
 
-Case -> lt lcid eq lcid ft ddarrow AppTerm :
+Case -> lt lcid eq lcid gt ddarrow AppTerm :
         fun (Ctx) ->
             NewCtx = add_name(Ctx, string_value('$4')),
             {string_value('$2'), {string_value('$4'), '$7'(NewCtx)}}
