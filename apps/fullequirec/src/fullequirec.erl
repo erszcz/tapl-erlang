@@ -21,6 +21,11 @@ main([]) ->
     usage(escript:script_name()),
     erlang:halt(1);
 main([Source]) ->
+
+    %dbg:tracer(process, {fun (T, ok) -> io:format("~p\n\n", [T]) end, ok}),
+    %dbg:p(all, call),
+    %dbg:tpl(fullequirec_core, x),
+
     process_file(Source, ?syntax:empty_context()).
 
 process_file(Source, Ctx) ->
