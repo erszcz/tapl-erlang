@@ -198,12 +198,16 @@ is_numeric_value(Ctx, T) ->
         _ -> false
     end.
 
--spec is_ty_abb(context(), index()) -> boolean().
-is_ty_abb(Ctx, Index) ->
+-spec is_ty_abb(context(), ty() | index()) -> boolean().
+is_ty_abb(Ctx, {var, Index, _}) ->
+    is_ty_abb(Ctx, Index);
+is_ty_abb(Ctx, Index) when is_integer(Index) ->
     case ?syntax:get_binding(_DummyInfo = {1,1}, Ctx, Index) of
         {ty_abb_bind, _} -> true;
         _ -> false
-    end.
+    end;
+is_ty_abb(_, _) ->
+    false.
 
 -spec get_ty_abb(context(), index()) -> ty().
 get_ty_abb(Ctx, Index) ->
@@ -241,6 +245,8 @@ types_equiv(Ctx, TyS, TyT) ->
 
 -spec types_equiv(context(), map(), ty(), ty()) -> boolean().
 types_equiv(Ctx, Seen, TyS, TyT) ->
+    TySIsTyAbb = is_ty_abb(Ctx, TyS),
+    TyTIsTyAbb = is_ty_abb(Ctx, TyT),
     case maps:get({TyS, TyT}, Seen, false) of
         true -> true;
         false ->
@@ -255,15 +261,12 @@ types_equiv(Ctx, Seen, TyS, TyT) ->
                                 TyS, ?syntax:type_subst_top(TyT, TyT1));
                 {{id, IdS}, {id, IdT}} -> IdS == IdT;
                 {float, float} -> true;
-                {{var, IndexS, _}, {var, IndexT, _}} ->
-                    case {is_ty_abb(Ctx, IndexS), is_ty_abb(Ctx, IndexT)} of
-                        {true, _} ->
-                            types_equiv(Ctx, Seen, get_ty_abb(Ctx, IndexS), TyT);
-                        {_, true} ->
-                            types_equiv(Ctx, Seen, TyS, get_ty_abb(Ctx, IndexT));
-                        _ ->
-                            IndexS == IndexT
-                    end;
+                {{var, IndexS, _}, _} when TySIsTyAbb ->
+                    types_equiv(Ctx, Seen, get_ty_abb(Ctx, IndexS), TyT);
+                {_, {var, IndexT, _}} when TyTIsTyAbb ->
+                    types_equiv(Ctx, Seen, TyS, get_ty_abb(Ctx, IndexT));
+                {{var, Index, _}, {var, Index, _}} ->
+                    true;
                 {{arr, TyS1, TyS2}, {arr, TyT1, TyT2}} ->
                     types_equiv(Ctx, Seen, TyS1, TyT1)
                     andalso
