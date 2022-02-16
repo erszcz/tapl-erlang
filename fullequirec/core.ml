@@ -186,7 +186,13 @@ let rec tyeqv seen ctx tyS tyT =
                fields1 fields2
      | _ -> false
 
-let tyeqv ctx tyS tyT = tyeqv [] ctx tyS tyT
+let tyeqv ctx tyS tyT =
+        printty ctx tyS; print_endline "";
+        printty ctx tyT; print_endline "";
+        let r = tyeqv [] ctx tyS tyT in
+        print_bool r;
+        print_endline "";
+        r
 
 (* ------------------------   TYPING  ------------------------ *)
 
