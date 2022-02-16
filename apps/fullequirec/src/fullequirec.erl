@@ -74,7 +74,10 @@ check_binding(Info, Ctx, B) ->
         {ty_abb_bind, TyT} -> {ty_abb_bind, TyT}
     end.
 
--spec format_binding_type(context(), binding()) -> io_lib:chars().
+%% TODO: This is the valid spec, but while Gradualizer makes my laptop burn with it,
+%%       I'll live with just string().
+%-spec format_binding_type(context(), binding()) -> io_lib:chars().
+-spec format_binding_type(context(), binding()) -> string().
 format_binding_type(Ctx, B) ->
     case B of
         name_bind -> "";
