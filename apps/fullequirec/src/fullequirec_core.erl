@@ -407,7 +407,10 @@ type_of(Ctx, T) ->
                         true ->
                             TyT12;
                         false ->
-                            type_error(Info, "result of body not compatible with domain")
+                            type_error(Info,
+                                       "result of body~n~n    ~p~n~n"
+                                       "not compatible with domain~n~n    ~p~n",
+                                       [TyT12, TyT11])
                     end;
                 _ ->
                     type_error(Info, "arrow type expected")
@@ -474,11 +477,8 @@ type_of(Ctx, T) ->
 
 -spec type_error(info(), _) -> none().
 type_error(Info, Error) ->
-    Format = case Info of
-                 {_,_} -> "~p:~p: ~ts\n";
-                 _ when is_integer(Info) -> "~p: ~ts\n"
-             end,
-    io:format(Format, [Info, Error]),
+    {Line, Col} = Info,
+    io:format("~p:~p: ~ts~n", [Line, Col, Error]),
     erlang:error({type_error, Info, Error}).
 
 -spec type_error(info(), string(), [any()]) -> none().
