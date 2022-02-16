@@ -83,8 +83,8 @@ format_binding_type(Ctx, B) ->
             io_lib:format(": ~ts", [?syntax:format_type(Ctx, TyT)]);
         {tm_abb_bind, T, MaybeTyT} ->
             case MaybeTyT of
-                none -> ?syntax:format_type(Ctx, ?core:type_of(Ctx, T));
-                TyT -> ?syntax:format_type(Ctx, TyT)
+                none -> [": ", ?syntax:format_type(Ctx, ?core:type_of(Ctx, T))];
+                TyT -> [": ", ?syntax:format_type(Ctx, TyT)]
             end;
         {ty_abb_bind, _} -> ":: *"
     end.
