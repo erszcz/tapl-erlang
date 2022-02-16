@@ -224,7 +224,7 @@ compute_type(Ctx, Ty) ->
                 true -> get_ty_abb(Ctx, Index);
                 false -> throw(no_rule_applies)
             end;
-        {rec, X, TyS1} = TyS ->
+        {rec, _, TyS1} = TyS ->
             ?syntax:type_subst_top(TyS, TyS1);
         _ ->
             throw(no_rule_applies)
@@ -253,10 +253,10 @@ types_equiv(Ctx, Seen, TyS, TyT) ->
             case {TyS, TyT} of
                 {string, string} -> true;
                 {unit, unit} -> true;
-                {{rec, X, TyS1}, _} ->
+                {{rec, _, TyS1}, _} ->
                     types_equiv(Ctx, maps:put({TyS, TyT}, true, Seen),
                                 ?syntax:type_subst_top(TyS, TyS1), TyT);
-                {_, {rec, X, TyT1}} ->
+                {_, {rec, _, TyT1}} ->
                     types_equiv(Ctx, maps:put({TyS, TyT}, true, Seen),
                                 TyS, ?syntax:type_subst_top(TyT, TyT1));
                 {{id, IdS}, {id, IdT}} -> IdS == IdT;
