@@ -206,8 +206,8 @@ pick_fresh_name(Ctx, X) ->
             {add_name(Ctx, X), X};
         {X, _} ->
             X1 = case re:run(X, "([a-zA-Z]+)([0-9]+)", [{capture, all_but_first, list}]) of
-                     {match, AlNum, Seq} ->
-                         AlNum ++ list_to_integer(integer_to_list(Seq) + 1);
+                     {match, [AlNum, Seq]} ->
+                         AlNum ++ integer_to_list(list_to_integer(Seq) + 1);
                      nomatch ->
                          X ++ "1"
                  end,
@@ -216,14 +216,14 @@ pick_fresh_name(Ctx, X) ->
 
 -spec index_to_name(info(), context(), non_neg_integer()) -> string().
 index_to_name(FInfo, Ctx, I) ->
-    try
-        %% OCaml List indexing is 0 based, Erlang lists indexing is 1 based,
-        %% so I+1 instead of I.
-        {X, _} = lists:nth(I+1, Ctx),
-        X
-    catch
-        error:function_clause ->
-            erlang:error({variable_lookup_failure, FInfo, I, context_length(Ctx)}, [FInfo, Ctx, I])
+    case Ctx of
+        [] ->
+            erlang:error({variable_lookup_failure, FInfo, I, context_length(Ctx)}, [FInfo, Ctx, I]);
+        [_|_] ->
+            %% OCaml List indexing is 0 based, Erlang lists indexing is 1 based,
+            %% so I+1 instead of I.
+            {X, _} = lists:nth(?assert_type(I+1, pos_integer()), ?assert_type(Ctx, [{string(), binding()}, ...])),
+            X
     end.
 
 -spec name_to_index(info(), context(), string()) -> non_neg_integer().
@@ -242,7 +242,7 @@ name_to_index(FInfo, Ctx, X) ->
 %%
 
 -spec type_map(OnTyVarF, _, ty()) -> ty() when
-      OnTyVarF :: fun((integer(), integer(), integer()) -> ty()).
+      OnTyVarF :: fun((non_neg_integer(), non_neg_integer(), non_neg_integer()) -> ty()).
 type_map(OnTyVarF, C, Ty) ->
     case Ty of
         {var, X, N} -> OnTyVarF(C, X, N);
@@ -407,7 +407,7 @@ get_binding(FInfo, Ctx, I) ->
         [_|_] ->
             %% OCaml List indexing is 0 based, Erlang lists indexing is 1 based,
             %% so I+1 instead of I.
-            {_, Bind} = lists:nth(I+1, ?assert_type(Ctx, [T, ...])),
+            {_, Bind} = lists:nth(?assert_type(I+1, pos_integer()), ?assert_type(Ctx, [T, ...])),
             binding_shift(I+1, Bind)
     end.
 
