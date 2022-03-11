@@ -69,7 +69,7 @@
                | {if_, info(), term_(), term_(), term_()}
                | {case_, info(), term_(), [{string(), {string(), term_()}}]}
                | {tag, info(), string(), term_(), ty()}
-               | {var, info(), index(), context_size()}
+               %| {var, info(), index(), context_size()}
                | {abs, info(), string(), ty(), term_()}
                | {app, info(), term_(), term_()}
                | {let_, info(), string(), term_(), term_()}
