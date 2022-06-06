@@ -22,7 +22,7 @@ OCAMLVERSION_GE_4_02 := $(shell [ $(OCAMLVERSION_MAJOR) -gt 4 -o \( \
 	$(OCAMLVERSION_MAJOR) -eq 4 -a $(OCAMLVERSION_MINOR) -ge 2 \) ] && echo true)
 
 ifeq ($(OCAMLVERSION_GE_4_02), true)
-	OCAMLCFLAGS = -unsafe-string
+	OCAMLCFLAGS =
 else
 	OCAMLCFLAGS =
 endif
