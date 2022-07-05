@@ -44,17 +44,10 @@
 %%' Datatypes
 %%
 
--type ty() :: {var, index(), context_size()}
-            | {id, string()}
+-type ty() :: bool
+            | nat
             | {arr, ty(), ty()}
-            | unit
-            | {record, [{string(), ty()}]}
-            | {rec, string(), ty()}
-            | {variant, [{string(), ty()}]}
-            | bool
-            | string
-            | float
-            | nat.
+            | {id, string()}.
 
 -type info() :: {pos_integer(), pos_integer()}.
 
@@ -67,33 +60,18 @@
 -type term_() :: {true, info()}
                | {false, info()}
                | {if_, info(), term_(), term_(), term_()}
-               | {case_, info(), term_(), [{string(), {string(), term_()}}]}
-               | {tag, info(), string(), term_(), ty()}
-               | {var, info(), index(), context_size()}
-               | {abs, info(), string(), ty(), term_()}
-               | {app, info(), term_(), term_()}
-               | {let_, info(), string(), term_(), term_()}
-               | {fix, info(), term_()}
-               | {string, info(), string()}
-               | {unit, info()}
-               | {ascribe, info(), term_(), ty()}
-               | {proj, info(), term_(), string()}
-               | {record, info(), [{string(), term_()}]}
-               | {float, info(), float()}
-               | {timesfloat, info(), term_(), term_()}
                | {zero, info()}
                | {succ, info(), term_()}
                | {pred, info(), term_()}
                | {is_zero, info(), term_()}
-               | {inert, info(), ty()}.
+               | {var, info(), index(), context_size()}
+               | {abs, info(), string(), ty(), term_()}
+               | {app, info(), term_(), term_()}.
 %% TAPL `term' type, but `term()' is a builtin type in Erlang,
 %% hence the name `term_()'.
 
 -type binding() :: name_bind
-                 | ty_var_bind
-                 | {var_bind, ty()}
-                 | {tm_abb_bind, term_(), ty() | none}
-                 | {ty_abb_bind, ty()}.
+                 | {var_bind, ty()}.
 
 -type context() :: [{string(), binding()}].
 
@@ -241,33 +219,10 @@ name_to_index(FInfo, Ctx, X) ->
 %%' Shifting
 %%
 
--spec type_map(OnTyVarF, _, ty()) -> ty() when
-      OnTyVarF :: fun((non_neg_integer(), non_neg_integer(), non_neg_integer()) -> ty()).
-type_map(OnTyVarF, C, Ty) ->
-    case Ty of
-        {var, X, N} -> OnTyVarF(C, X, N);
-        {id, _} -> Ty;
-        string -> Ty;
-        unit -> Ty;
-        {record, FieldTys} ->
-            {record, [ {L, type_map(OnTyVarF, C, FTy)} || {L, FTy} <- FieldTys ]};
-        {rec, X, TyT} -> {rec, X, type_map(OnTyVarF, C+1, TyT)};
-        float -> Ty;
-        bool -> Ty;
-        nat -> Ty;
-        {arr, Ty1, Ty2} ->
-            {arr, type_map(OnTyVarF, C, Ty1), type_map(OnTyVarF, C, Ty2)};
-        {variant, FieldTys} ->
-            {variant, [ {L, type_map(OnTyVarF, C, FTy)} || {L, FTy} <- FieldTys ]}
-    end.
-
--spec term_map(OnVarF, OnTypeF, _, term_()) -> term_() when
-      OnVarF :: fun((info(), pos_integer(), non_neg_integer(), non_neg_integer()) -> term_()),
-      OnTypeF :: fun((...) -> ty()).
-term_map(OnVarF, OnTypeF, C, T) ->
+-spec term_map(OnVarF, _, term_()) -> term_() when
+      OnVarF :: fun((info(), pos_integer(), non_neg_integer(), non_neg_integer()) -> term_()).
+term_map(OnVarF, C, T) ->
     case T of
-        {inert, FInfo, Ty} ->
-            {inert, FInfo, OnTypeF(C, Ty)};
         {var, FInfo, X, N} ->
             OnVarF(FInfo, C, X, N);
         {abs, FInfo, X, Ty1, T2} ->
@@ -317,13 +272,6 @@ term_map(OnVarF, OnTypeF, C, T) ->
             {case_, FInfo, term_map(OnVarF, OnTypeF, C, T1), NewCases}
     end.
 
--spec type_shift_above(integer(), non_neg_integer(), ty()) -> ty().
-type_shift_above(D, C, Ty) ->
-    type_map(fun
-                 (C1, X, N) when X >= C1 -> {var, X+D, N+D};
-                 ( _, X, N) -> {var, X, N+D}
-             end, C, Ty).
-
 -spec term_shift_above(integer(), non_neg_integer(), term_()) -> term_().
 term_shift_above(D, C, T) ->
     term_map(fun
@@ -336,9 +284,6 @@ term_shift_above(D, C, T) ->
 -spec term_shift(integer(), term_()) -> term_().
 term_shift(D, T) ->
     term_shift_above(D, 0, T).
-
--spec type_shift(integer(), ty()) -> ty().
-type_shift(D, Ty) -> type_shift_above(D, 0, Ty).
 
 -spec binding_shift(_, binding()) -> binding().
 binding_shift(D, Bind) ->
