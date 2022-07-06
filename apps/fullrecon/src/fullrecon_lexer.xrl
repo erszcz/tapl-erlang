@@ -50,4 +50,4 @@ Erlang code.
 
 %% Erlang code is taken out to a separate file,
 %% as Leex special syntax breaks code indendation / syntax highlighting.
--include("fullequirec_lexer.hrl").
+-include("fullrecon_lexer.hrl").

@@ -1,6 +1,6 @@
 %% @doc This module implements TAPL chapters 5, 6, 7.
 %% See https://www.cis.upenn.edu/~bcpierce/tapl/ for the book.
--module(fullequirec_core).
+-module(fullrecon_core).
 
 -export([eval/2,
          eval_binding/2,
@@ -8,7 +8,7 @@
          types_equiv/3,
          type_error/2, type_error/3]).
 
--define(syntax, fullequirec_syntax).
+-define(syntax, fullrecon_syntax).
 
 -type binding() :: ?syntax:binding().
 -type context() :: ?syntax:context().

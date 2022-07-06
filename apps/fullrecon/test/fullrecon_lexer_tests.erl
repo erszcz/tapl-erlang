@@ -1,4 +1,4 @@
--module(fullequirec_lexer_tests).
+-module(fullrecon_lexer_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -9,23 +9,23 @@ data() ->
 zero_test_() ->
     [?_assertEqual({ok, [{int_value,{1,1},"1"}, {semi,{1,2}}], 1},
                    begin
-                       fullequirec_lexer:reset(),
-                       fullequirec_lexer:string("1;")
+                       fullrecon_lexer:reset(),
+                       fullrecon_lexer:string("1;")
                    end),
      ?_assertEqual({ok, [{int_value,{1,1},"0"}, {semi,{1,2}}], 1},
                    begin
-                       fullequirec_lexer:reset(),
-                       fullequirec_lexer:string("0;")
+                       fullrecon_lexer:reset(),
+                       fullrecon_lexer:string("0;")
                    end),
      ?_assertEqual({ok, [{int_value,{1,1},"9"}, {semi,{1,2}}], 1},
                    begin
-                       fullequirec_lexer:reset(),
-                       fullequirec_lexer:string("9;")
+                       fullrecon_lexer:reset(),
+                       fullrecon_lexer:string("9;")
                    end)].
 
 lexer_test() ->
     Data = data(),
-    fullequirec_lexer:reset(),
+    fullrecon_lexer:reset(),
     %% This fixture was checked token by token to ensure correct lexing of test/test.f,
     %% including the line and column information.
     ?assertEqual({ok,[{comment,{1,1},"/* Examples for testing */"},
@@ -187,4 +187,4 @@ lexer_test() ->
                       {rparen,{31,33}},
                       {semi,{31,34}}],
                   33},
-                 fullequirec_lexer:string(Data)).
+                 fullrecon_lexer:string(Data)).

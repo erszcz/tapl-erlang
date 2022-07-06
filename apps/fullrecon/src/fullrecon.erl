@@ -1,16 +1,16 @@
--module(fullequirec).
+-module(fullrecon).
 
 -export([main/1]).
 
--type binding() :: fullequirec_syntax:binding().
--type command() :: fullequirec_syntax:command().
--type context() :: fullequirec_syntax:context().
--type info()    :: fullequirec_syntax:info().
+-type binding() :: fullrecon_syntax:binding().
+-type command() :: fullrecon_syntax:command().
+-type context() :: fullrecon_syntax:context().
+-type info()    :: fullrecon_syntax:info().
 
--define(core,   fullequirec_core).
--define(lexer,  fullequirec_lexer).
--define(parser, fullequirec_parser).
--define(syntax, fullequirec_syntax).
+-define(core,   fullrecon_core).
+-define(lexer,  fullrecon_lexer).
+-define(parser, fullrecon_parser).
+-define(syntax, fullrecon_syntax).
 
 usage(Progname) ->
     io:format("Usage: ~s <source>\n",
@@ -24,7 +24,7 @@ main([Source]) ->
 
     %dbg:tracer(process, {fun (T, ok) -> io:format("~p\n\n", [T]) end, ok}),
     %dbg:p(all, call),
-    %dbg:tpl(fullequirec_core, x),
+    %dbg:tpl(fullrecon_core, x),
 
     process_file(Source, ?syntax:empty_context()).
 
@@ -45,13 +45,13 @@ process_command(Command, Ctx) ->
     case Command of
         {eval, _Info, T} ->
             TyT = ?core:type_of(Ctx, T),
-            T_ = fullequirec_core:eval(Ctx, T),
+            T_ = fullrecon_core:eval(Ctx, T),
             io:format("~ts : ~ts\n", [?syntax:format_doc(?syntax:prettypr_a_term(true, Ctx, T_), #{}),
                                       ?syntax:format_type(Ctx, TyT)]),
             Ctx;
         {bind, Info, X, Bind0} ->
             Bind = check_binding(Info, Ctx, Bind0),
-            Bind_ = fullequirec_core:eval_binding(Ctx, Bind),
+            Bind_ = fullrecon_core:eval_binding(Ctx, Bind),
             io:format("~ts ~ts\n", [X, format_binding_type(Ctx, Bind_)]),
             ?syntax:add_binding(Ctx, X, Bind_)
     end.
