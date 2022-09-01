@@ -76,7 +76,7 @@
 
 -type context() :: [{string(), binding()}].
 
--type command() :: {eval, info(), term()}
+-type command() :: {eval, info(), term_()}
                  | {bind, info(), string(), binding()}.
 
 %%.
