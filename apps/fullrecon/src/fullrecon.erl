@@ -2,15 +2,17 @@
 
 -export([main/1]).
 
--type binding() :: fullrecon_syntax:binding().
--type command() :: fullrecon_syntax:command().
--type context() :: fullrecon_syntax:context().
--type info()    :: fullrecon_syntax:info().
-
 -define(core,   fullrecon_core).
 -define(lexer,  fullrecon_lexer).
 -define(parser, fullrecon_parser).
 -define(syntax, fullrecon_syntax).
+
+-type binding()     :: ?syntax:binding().
+-type command()     :: ?syntax:command().
+-type context()     :: ?syntax:context().
+-type info()        :: ?syntax:info().
+-type uvar_gen()    :: ?core:uvar_gen().
+-type constraints() :: ?core:constraints().
 
 usage(Progname) ->
     io:format("Usage: ~s <source>\n",
@@ -26,68 +28,33 @@ main([Source]) ->
     %dbg:p(all, call),
     %dbg:tpl(fullrecon_core, x),
 
-    process_file(Source, ?syntax:empty_context()).
+    process_file(Source, ?syntax:empty_context(), ?core:uvar_gen(), ?core:empty_constraints()).
 
-process_file(Source, Ctx) ->
+process_file(Source, Ctx, NextUVar, Cs) ->
     {ok, Data} = file:read_file(Source),
     {ok, Tokens, _} = ?lexer:string(unicode:characters_to_list(Data)),
     {ok, Parser} = ?parser:parse(Tokens),
     {Commands, _NewCtx} = Parser(Ctx),
-    process_commands(Ctx, Commands).
+    process_commands(Ctx, NextUVar, Cs, Commands).
 
--spec process_commands(context(), [command()]) -> ok.
-process_commands(Ctx, Commands) ->
-    lists:foldl(fun process_command/2, Ctx, Commands),
+-spec process_commands(context(), uvar_gen(), constraints(), [command()]) -> ok.
+process_commands(Ctx, NextUVar, Cs, Commands) ->
+    lists:foldl(fun process_command/2, {Ctx, NextUVar, Cs}, Commands),
     ok.
 
--spec process_command(command(), context()) -> context().
-process_command(Command, Ctx) ->
+-spec process_command(command(), {context(), uvar_gen(), constraints()}) -> context().
+process_command(Command, {Ctx, NextUVar, Cs}) ->
     case Command of
-        {eval, _Info, T} ->
-            TyT = ?core:type_of(Ctx, T),
-            T_ = fullrecon_core:eval(Ctx, T),
-            io:format("~ts : ~ts\n", [?syntax:format_doc(?syntax:prettypr_a_term(true, Ctx, T_), #{}),
-                                      ?syntax:format_type(Ctx, TyT)]),
-            Ctx;
-        {bind, Info, X, Bind0} ->
-            Bind = check_binding(Info, Ctx, Bind0),
-            Bind_ = fullrecon_core:eval_binding(Ctx, Bind),
-            io:format("~ts ~ts\n", [X, format_binding_type(Ctx, Bind_)]),
-            ?syntax:add_binding(Ctx, X, Bind_)
-    end.
-
--spec check_binding(info(), context(), binding()) -> binding().
-check_binding(Info, Ctx, B) ->
-    case B of
-        name_bind -> name_bind;
-        {var_bind, TyT} -> {var_bind, TyT};
-        {tm_abb_bind, T, none} -> {tm_abb_bind, T, ?core:type_of(Ctx, T)};
-        {tm_abb_bind, T, TyT} ->
-            TyT_ = ?core:type_of(Ctx, T),
-            case ?core:types_equiv(Ctx, TyT_, TyT) of
-                true ->
-                    {tm_abb_bind, T, TyT};
-                false ->
-                    ?core:type_error(Info, "type of binding does not match declared type")
-            end;
-        ty_var_bind -> ty_var_bind;
-        {ty_abb_bind, TyT} -> {ty_abb_bind, TyT}
-    end.
-
-%% TODO: This is the valid spec, but while Gradualizer makes my laptop burn with it,
-%%       I'll live with just string().
-%-spec format_binding_type(context(), binding()) -> io_lib:chars().
--spec format_binding_type(context(), binding()) -> string().
-format_binding_type(Ctx, B) ->
-    case B of
-        name_bind -> "";
-        ty_var_bind -> "";
-        {var_bind, TyT} ->
-            io_lib:format(": ~ts", [?syntax:format_type(Ctx, TyT)]);
-        {tm_abb_bind, T, MaybeTyT} ->
-            case MaybeTyT of
-                none -> [": ", ?syntax:format_type(Ctx, ?core:type_of(Ctx, T))];
-                TyT -> [": ", ?syntax:format_type(Ctx, TyT)]
-            end;
-        {ty_abb_bind, _} -> ":: *"
+        {eval, Info, T} ->
+            {TyT, NextUVar1, CsT} = ?core:recon(Ctx, NextUVar, T),
+            T_ = ?core:eval(Ctx, T),
+            Cs1 = ?core:combine_constraints(Cs, CsT),
+            Cs2 = ?core:unify(Info, Ctx, "Could not simplify constraints", Cs1),
+            io:format("~ts : ~ts\n",
+                      [?syntax:format_doc(?syntax:prettypr_a_term(true, Ctx, T_), #{}),
+                       ?syntax:format_type(Ctx, ?core:apply_subst(Cs2, TyT))]),
+            {Ctx, NextUVar1, Cs2};
+        {bind, Info, X, Bind} ->
+            io:format("~ts ~ts\n", [X, ?syntax:format_binding(Ctx, Bind)]),
+            {?syntax:add_binding(Ctx, X, Bind), ?core:uvar_gen(), Cs}
     end.
