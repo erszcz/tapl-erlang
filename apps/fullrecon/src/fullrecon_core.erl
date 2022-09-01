@@ -14,9 +14,7 @@
 
 -define(syntax, fullrecon_syntax).
 
--type binding() :: ?syntax:binding().
 -type context() :: ?syntax:context().
--type index()   :: ?syntax:index().
 -type info()    :: ?syntax:info().
 -type term_()   :: ?syntax:term_().
 -type ty()      :: ?syntax:ty().
@@ -114,15 +112,6 @@ empty_constraints() -> [].
 
 -spec combine_constraints(constraints(), constraints()) -> constraints().
 combine_constraints(Cs1, Cs2) -> lists:append(Cs1, Cs2).
-
--spec print_constraints(constraints()) -> iolist().
-print_constraints([]) -> [];
-print_constraints(Cs) ->
-    ["{", lists:join(",", [ print_constraint(C) || C <- Cs ]), "}"].
-
--spec print_constraint({ty(), ty()}) -> list().
-print_constraint({TyS, TyT}) ->
-    [ ?syntax:format_type([], TyS), " = ", ?syntax:format_type([], TyT) ].
 
 -type uvar_gen() :: fun(() -> next_uvar()).
 -type next_uvar() :: {string(), uvar_gen()}.
