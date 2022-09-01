@@ -52,8 +52,8 @@
 -type token() :: {atom(), info()}
                | {atom(), info(), string()}.
 
--type index() :: integer().
--type context_size() :: integer().
+-type index() :: non_neg_integer().
+-type context_size() :: non_neg_integer().
 
 -type maybe(T) :: none | {ok, T}.
 
@@ -178,9 +178,10 @@ index_to_name(FInfo, Ctx, I) ->
         [] ->
             erlang:error({variable_lookup_failure, FInfo, I, context_length(Ctx)}, [FInfo, Ctx, I]);
         [_|_] ->
+            Ctx = ?assert_type(Ctx, [T, ...]),
             %% OCaml List indexing is 0 based, Erlang lists indexing is 1 based,
             %% so I+1 instead of I.
-            {X, _} = lists:nth(?assert_type(I+1, pos_integer()), ?assert_type(Ctx, [{string(), binding()}, ...])),
+            {X, _} = lists:nth(?assert_type(I+1, pos_integer()), Ctx),
             X
     end.
 
@@ -199,11 +200,8 @@ name_to_index(FInfo, Ctx, X) ->
 %%' Shifting
 %%
 
-%-spec term_map(OnVarF, OnTypeF, _, term_()) -> term_() when
-%      OnVarF :: fun((info(), pos_integer(), non_neg_integer(), non_neg_integer()) -> term_()),
-%      OnTypeF :: fun((...) -> ty()).
--spec term_map(OnVarF, _, term_()) -> term_() when
-      OnVarF :: fun((info(), integer(), integer(), integer()) -> term_()).
+-spec term_map(OnVarF, non_neg_integer(), term_()) -> term_() when
+      OnVarF :: fun((info(), non_neg_integer(), index(), context_size()) -> term_()).
 term_map(OnVarF, C, T) ->
     case T of
         {var, FInfo, X, N} ->
@@ -236,8 +234,16 @@ term_map(OnVarF, C, T) ->
 -spec term_shift_above(integer(), non_neg_integer(), term_()) -> term_().
 term_shift_above(D, C, T) ->
     term_map(fun
-                 (FInfo, C1, X, N) when X >= C1 -> {var, FInfo, X+D, N+D};
-                 (FInfo, _, X, N) -> {var, FInfo, X, N+D}
+                 (FInfo, C1, X, N) when X >= C1 ->
+                     NewX = ?assert_type(X + D, non_neg_integer()),
+                     NewX < 0 andalso erlang:error(negative_context_index),
+                     NewN = ?assert_type(N + D, non_neg_integer()),
+                     NewN < 0 andalso erlang:error(negative_context_size),
+                     {var, FInfo, NewX, NewN};
+                 (FInfo, _, X, N) ->
+                     NewN = ?assert_type(N + D, non_neg_integer()),
+                     NewN < 0 andalso erlang:error(negative_context_size),
+                     {var, FInfo, X, NewN}
              end,
              C, T).
 
@@ -416,6 +422,9 @@ prettypr_app_term(Outer, Ctx, T) ->
             prettypr_a_term(Outer, Ctx, T)
     end.
 
+-define(chars_to_string(Chars),
+        binary_to_list(iolist_to_binary(?assert_type(Chars, list())))).
+
 -spec prettypr_a_term(boolean(), context(), term_()) -> prettypr:document().
 prettypr_a_term(_Outer, Ctx, T) ->
     case T of
@@ -424,7 +433,8 @@ prettypr_a_term(_Outer, Ctx, T) ->
                 N ->
                     prettypr:text(index_to_name(Info, Ctx, X));
                 _ ->
-                    prettypr:text(io_lib:format("[bad index: ~p / ~p in ~p]", [X, N, Ctx]))
+                    Msg = ?chars_to_string(io_lib:format("[bad index: ~p / ~p in ~p]", [X, N, Ctx])),
+                    prettypr:text(Msg)
             end;
         {true, _} ->
             prettypr:text("true");
