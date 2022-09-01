@@ -193,7 +193,7 @@ recon(Ctx, NextUVar, T) ->
             {Ty3, NextUVar3, lists:append([NewCs, Cs1, Cs2, Cs3])}
     end.
 
--spec subst_in_type(ty(), ty(), ty()) -> ty().
+-spec subst_in_type(string(), ty(), ty()) -> ty().
 subst_in_type(TyX, TyT, TyS) ->
     F = fun
             F({arr, TyS1, TyS2}) ->
@@ -219,58 +219,62 @@ apply_subst(Cs, TyT) ->
                         TyS
                 end, TyT, lists:reverse(Cs)).
 
--spec subst_in_constraints(ty(), ty(), constraints()) -> constraints().
+-spec subst_in_constraints(string(), ty(), constraints()) -> constraints().
 subst_in_constraints(TyX, TyT, Cs) ->
     lists:map(fun ({TyS1, TyS2}) ->
                       {subst_in_type(TyX, TyT, TyS1), subst_in_type(TyX, TyT, TyS2)}
               end, Cs).
 
--spec occurs_in(ty(), ty()) -> boolean().
+-spec occurs_in(string(), ty()) -> boolean().
 occurs_in(TyX, TyT) ->
-    O = fun
-            O({arr, Ty1, Ty2}) ->
-                O(Ty1) orelse O(Ty2);
-            O(nat) ->
-                false;
-            O(bool) ->
-                false;
-            O({id, S}) ->
-                S == TyX
-        end,
-    O(TyT).
+    case TyT of
+        {arr, Ty1, Ty2} ->
+            occurs_in(TyX, Ty1) orelse occurs_in(TyX, Ty2);
+        nat ->
+            false;
+        bool ->
+            false;
+        {id, S} ->
+            S == TyX
+    end.
 
 -spec unify(info(), context(), string(), constraints()) -> constraints().
 unify(Info, Ctx, Msg, Cs) ->
-    U = fun
-            U([]) ->
-                [];
-            U([{TyS, {id, TyX}} | Rest]) ->
-                case {TyS == {id, TyX}, occurs_in(TyX, TyS)} of
-                    {true, _} ->
-                        U(Rest);
-                    {false, true} ->
-                        erlang:error({circular_constraints, Info, Msg});
-                    _ ->
-                        lists:append(U(subst_in_constraints(TyX, TyS, Rest)),
-                                     [{ty({id, TyX}), TyS}])
-                end;
-            U([{{id, TyX}, TyT} | Rest]) ->
-                case {TyT == {id, TyX}, occurs_in(TyX, TyT)} of
-                    {true, _} ->
-                        U(Rest);
-                    {false, true} ->
-                        erlang:error({circular_constraints, Info, Msg});
-                    _ ->
-                        lists:append(U(subst_in_constraints(TyX, TyT, Rest)),
-                                     [{ty({id, TyX}), TyT}])
-                end;
-            U([{nat, nat} | Rest]) ->
-                U(Rest);
-            U([{bool, bool} | Rest]) ->
-                U(Rest);
-            U([{{arr, TyS1, TyS2}, {arr, TyT1, TyT2}} | Rest]) ->
-                U([ {TyS1, TyT1}, {TyS2, TyT2} | Rest]);
-            U([_|_] = Cs1) ->
-                erlang:error({unsolvable_constraints, Info, Cs1})
-        end,
-    U(Cs).
+    case Cs of
+        [] ->
+            [];
+        %% This magic is to avoid list exhaustiveness checking limitations in Gradualizer.
+        %% I.e. it can easily check exhaustiveness on disjoint unions,
+        %% but not so easily on complex list patterns.
+        [C | Rest] ->
+            case C of
+                {TyS, {id, TyX}} ->
+                    case {TyS == ty({id, TyX}), occurs_in(TyX, TyS)} of
+                        {true, _} ->
+                            unify(Info, Ctx, Msg, Rest);
+                        {false, true} ->
+                            erlang:error({circular_constraints, Info, Msg});
+                        _ ->
+                            lists:append(unify(Info, Ctx, Msg, subst_in_constraints(TyX, TyS, Rest)),
+                                         [{ty({id, TyX}), TyS}])
+                    end;
+                {{id, TyX}, TyT} ->
+                    case {TyT == ty({id, TyX}), occurs_in(TyX, TyT)} of
+                        {true, _} ->
+                            unify(Info, Ctx, Msg, Rest);
+                        {false, true} ->
+                            erlang:error({circular_constraints, Info, Msg});
+                        _ ->
+                            lists:append(unify(Info, Ctx, Msg, subst_in_constraints(TyX, TyT, Rest)),
+                                         [{ty({id, TyX}), TyT}])
+                    end;
+                {nat, nat} ->
+                    unify(Info, Ctx, Msg, Rest);
+                {bool, bool} ->
+                    unify(Info, Ctx, Msg, Rest);
+                {{arr, TyS1, TyS2}, {arr, TyT1, TyT2}} ->
+                    unify(Info, Ctx, Msg, [ {TyS1, TyT1}, {TyS2, TyT2} | Rest]);
+                _ ->
+                    erlang:error({unsolvable_constraints, Info, Cs})
+            end
+    end.
