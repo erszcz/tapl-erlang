@@ -1,6 +1,6 @@
 %% @doc This module implements TAPL chapters 5, 6, 7.
 %% See https://www.cis.upenn.edu/~bcpierce/tapl/ for the book.
--module(fullrecon_core).
+-module(fullpoly_core).
 
 -export([eval/2,
          recon/3,
@@ -12,7 +12,7 @@
 
 -export_type([uvar_gen/0]).
 
--define(syntax, fullrecon_syntax).
+-define(syntax, fullpoly_syntax).
 
 -type context() :: ?syntax:context().
 -type info()    :: ?syntax:info().

@@ -1,11 +1,11 @@
--module(fullrecon).
+-module(fullpoly).
 
 -export([main/1]).
 
--define(core,   fullrecon_core).
--define(lexer,  fullrecon_lexer).
--define(parser, fullrecon_parser).
--define(syntax, fullrecon_syntax).
+-define(core,   fullpoly_core).
+-define(lexer,  fullpoly_lexer).
+-define(parser, fullpoly_parser).
+-define(syntax, fullpoly_syntax).
 
 -type binding()     :: ?syntax:binding().
 -type command()     :: ?syntax:command().
@@ -26,7 +26,7 @@ main([Source]) ->
 
     %dbg:tracer(process, {fun (T, ok) -> io:format("~p\n\n", [T]) end, ok}),
     %dbg:p(all, call),
-    %dbg:tpl(fullrecon_core, x),
+    %dbg:tpl(fullpoly_core, x),
 
     process_file(Source, ?syntax:empty_context(), ?core:uvar_gen(), ?core:empty_constraints()).
 

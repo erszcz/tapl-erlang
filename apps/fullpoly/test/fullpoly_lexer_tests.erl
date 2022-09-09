@@ -1,4 +1,4 @@
--module(fullrecon_lexer_tests).
+-module(fullpoly_lexer_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -9,23 +9,23 @@ data() ->
 zero_test_() ->
     [?_assertEqual({ok, [{int_value,{1,1},"1"}, {semi,{1,2}}], 1},
                    begin
-                       fullrecon_lexer:reset(),
-                       fullrecon_lexer:string("1;")
+                       fullpoly_lexer:reset(),
+                       fullpoly_lexer:string("1;")
                    end),
      ?_assertEqual({ok, [{int_value,{1,1},"0"}, {semi,{1,2}}], 1},
                    begin
-                       fullrecon_lexer:reset(),
-                       fullrecon_lexer:string("0;")
+                       fullpoly_lexer:reset(),
+                       fullpoly_lexer:string("0;")
                    end),
      ?_assertEqual({ok, [{int_value,{1,1},"9"}, {semi,{1,2}}], 1},
                    begin
-                       fullrecon_lexer:reset(),
-                       fullrecon_lexer:string("9;")
+                       fullpoly_lexer:reset(),
+                       fullpoly_lexer:string("9;")
                    end)].
 
 lexer_test() ->
     Data = data(),
-    fullrecon_lexer:reset(),
+    fullpoly_lexer:reset(),
     %% This fixture was checked token by token to ensure correct lexing of test/test.f,
     %% including the line and column information.
     ?assertEqual({ok,[{comment,{1,1},"/* Examples for testing */"},
@@ -182,4 +182,4 @@ lexer_test() ->
                       {rparen,{22,30}},
                       {semi,{22,31}}],
                   24},
-                 fullrecon_lexer:string(Data)).
+                 fullpoly_lexer:string(Data)).

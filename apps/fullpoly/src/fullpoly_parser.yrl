@@ -104,17 +104,17 @@ ATerm -> int_value               : fun (_Ctx) -> term_(int_value_term('$1')) end
 
 Erlang code.
 
--import(fullrecon_syntax, [ty/1,
-                           binding/1,
-                           command/1,
-                           info/1,
-                           term_/1]).
+-import(fullpoly_syntax, [ty/1,
+                          binding/1,
+                          command/1,
+                          info/1,
+                          term_/1]).
 
--import(fullrecon_syntax, [add_name/2,
-                           is_name_bound/2,
-                           context_length/1,
-                           name_to_index/3,
-                           term_info/1]).
+-import(fullpoly_syntax, [add_name/2,
+                          is_name_bound/2,
+                          context_length/1,
+                          name_to_index/3,
+                          term_info/1]).
 
 int_value_term({int_value, Info, S}) when is_list(S) -> int_value(list_to_integer(S), Info).
 

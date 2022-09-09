@@ -1,4 +1,4 @@
--module(fullrecon_syntax).
+-module(fullpoly_syntax).
 
 %% Constructors
 -export([ty/1,
