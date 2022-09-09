@@ -1,6 +1,14 @@
 /* Examples for testing */
 
- let x=true in x;
+ "hello";
+
+unit;
+
+lambda x:A. x;
+
+let x=true in x;
+
+timesfloat 2.0 3.14159;
 
 lambda x:Bool. x;
 (lambda x:Bool->Bool. if x false then true else false) 
@@ -9,15 +17,25 @@ lambda x:Bool. x;
 lambda x:Nat. succ x;
 (lambda x:Nat. succ (succ x)) (succ 0); 
 
-lambda x:A. x;
+T = Nat->Nat;
+lambda f:T. lambda x:Nat. f (f x);
 
 
-(lambda x:X. lambda y:X->X. y x);
-(lambda x:X->X. x 0) (lambda y:Nat. y); 
+lambda X. lambda x:X. x; 
+(lambda X. lambda x:X. x) [All X.X->X]; 
+
+ {*All Y.Y, lambda x:(All Y.Y). x} as {Some X,X->X};
 
 
+{x=true, y=false}; 
+{x=true, y=false}.x;
+{true, false}; 
+{true, false}.1; 
 
-(lambda x. x 0);
-let f = lambda x. x in (f f) (f 0);
-let g = lambda x. 1 in g (g g);
+
+{*Nat, {c=0, f=lambda x:Nat. succ x}}
+  as {Some X, {c:X, f:X->Nat}};
+let {X,ops} = {*Nat, {c=0, f=lambda x:Nat. succ x}}
+              as {Some X, {c:X, f:X->Nat}}
+in (ops.f ops.c);
 
