@@ -46,19 +46,31 @@ create_id(Line, Chars) ->
 reserved_word(Chars) ->
     case Chars of
         %% Keywords
-        "let" -> 'let';
-        "in" -> 'in';
+        "type" -> 'type';
+        "inert" -> 'inert';
+        "lambda" -> 'lambda';
+        "fix" -> 'fix';
+        "letrec" -> 'letrec';
+        "String" -> 'ustring';
+        "unit" -> 'unit';
+        "Unit" -> 'uunit';
         "if" -> 'if';
         "then" -> 'then';
         "else" -> 'else';
         "true" -> 'true';
         "false" -> 'false';
         "Bool" -> 'bool';
+        "timesfloat" -> 'timesfloat';
+        "Float" -> 'ufloat';
         "succ" -> 'succ';
         "pred" -> 'pred';
         "iszero" -> 'iszero';
         "Nat" -> 'nat';
-        "lambda" -> 'lambda';
+        "Some" -> 'some';
+        "let" -> 'let';
+        "in" -> 'in';
+        "as" -> 'as';
+        "All" -> 'all';
 
         %% Symbols
         "_" -> uscore;
