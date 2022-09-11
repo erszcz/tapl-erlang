@@ -1,16 +1,16 @@
--module(fullpoly).
+-module(fullfsub).
 
 -export([main/1]).
 
--type binding() :: fullpoly_syntax:binding().
--type command() :: fullpoly_syntax:command().
--type context() :: fullpoly_syntax:context().
--type info()    :: fullpoly_syntax:info().
+-type binding() :: fullfsub_syntax:binding().
+-type command() :: fullfsub_syntax:command().
+-type context() :: fullfsub_syntax:context().
+-type info()    :: fullfsub_syntax:info().
 
--define(core,   fullpoly_core).
--define(lexer,  fullpoly_lexer).
--define(parser, fullpoly_parser).
--define(syntax, fullpoly_syntax).
+-define(core,   fullfsub_core).
+-define(lexer,  fullfsub_lexer).
+-define(parser, fullfsub_parser).
+-define(syntax, fullfsub_syntax).
 
 usage(Progname) ->
     io:format("Usage: ~s <source>\n",
@@ -24,7 +24,7 @@ main([Source]) ->
 
     %dbg:tracer(process, {fun (T, ok) -> io:format("~p\n\n", [T]) end, ok}),
     %dbg:p(all, call),
-    %dbg:tpl(fullpoly_core, x),
+    %dbg:tpl(fullfsub_core, x),
 
     process_file(Source, ?syntax:empty_context()).
 

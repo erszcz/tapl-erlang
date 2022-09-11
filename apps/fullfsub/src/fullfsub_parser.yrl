@@ -234,13 +234,13 @@ Field -> Term           : fun (Ctx, I) -> {integer_to_list(I), '$1'(Ctx)} end.
 
 Erlang code.
 
--import(fullpoly_syntax, [ty/1,
+-import(fullfsub_syntax, [ty/1,
                           binding/1,
                           command/1,
                           info/1,
                           term_/1]).
 
--import(fullpoly_syntax, [add_name/2,
+-import(fullfsub_syntax, [add_name/2,
                           is_name_bound/2,
                           context_length/1,
                           name_to_index/3,

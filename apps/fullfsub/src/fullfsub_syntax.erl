@@ -1,4 +1,4 @@
--module(fullpoly_syntax).
+-module(fullfsub_syntax).
 
 %% Constructors
 -export([ty/1,

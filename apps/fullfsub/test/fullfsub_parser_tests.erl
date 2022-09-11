@@ -1,4 +1,4 @@
--module(fullpoly_parser_tests).
+-module(fullfsub_parser_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -8,8 +8,8 @@ data() ->
 
 parser_test() ->
     Data = data(),
-    {ok, Tokens, _} = fullpoly_lexer:string(Data),
-    {ok, ParserF} = fullpoly_parser:parse(Tokens),
+    {ok, Tokens, _} = fullfsub_lexer:string(Data),
+    {ok, ParserF} = fullfsub_parser:parse(Tokens),
     ?assertEqual({[{eval,{3,2},{string,{3,2},"hello"}},
                    {eval,{5,1},{unit,{5,1}}},
                    {eval,{7,1},{abs,{7,1},"x",{id,"A"},{var,{7,13},0,1}}},
