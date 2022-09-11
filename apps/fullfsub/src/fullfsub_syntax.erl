@@ -716,10 +716,12 @@ prettypr_a_term(Outer, Ctx, T) ->
                 N ->
                     prettypr:text(index_to_name(Info, Ctx, X));
                 _ ->
-                    prettypr:text(io_lib:format("[bad index: ~p / ~p in ~p]", [X, N, Ctx]))
+                    Msg = ?assert_type(io_lib:format("[bad index: ~p / ~p in ~p]", [X, N, Ctx]), string()),
+                    prettypr:text(Msg)
             end;
         {string, _Info, S} ->
-            prettypr:text(io_lib:format("~p", [S]));
+            Msg = ?assert_type(io_lib:format("~p", [S]), string()),
+            prettypr:text(Msg);
         {unit, _} ->
             prettypr:text("unit");
         {record, _Info, Fields} ->
@@ -734,7 +736,8 @@ prettypr_a_term(Outer, Ctx, T) ->
         {false, _} ->
             prettypr:text("false");
         {float, _Info, S} ->
-            prettypr:text(io_lib:format("~p", [S]));
+            Msg = ?assert_type(io_lib:format("~p", [S]), string()),
+            prettypr:text(Msg);
         {zero, _} ->
             prettypr:text("0");
         {succ, _, T1} ->
