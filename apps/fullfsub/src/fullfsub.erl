@@ -56,8 +56,8 @@ process_command(Command, Ctx) ->
             ?syntax:add_binding(Ctx, X, Bind_);
         {some_bind, Info, TyX, X, T} ->
             TyT = ?core:type_of(Ctx, T),
-            case ?core:simplify_type(Ctx, TyT) of
-                {some, _, TyBody} ->
+            case ?core:lookup_constraint(Ctx, TyT) of
+                {some, _, TyBound, TyBody} ->
                     T_ = ?core:eval(Ctx, T),
                     B = case T_ of
                             {pack, _, _, T12, _} ->
@@ -65,7 +65,7 @@ process_command(Command, Ctx) ->
                             _ ->
                                 ?syntax:binding({var_bind, TyBody})
                         end,
-                    Ctx1 = ?syntax:add_binding(Ctx, TyX, ?syntax:binding(ty_var_bind)),
+                    Ctx1 = ?syntax:add_binding(Ctx, TyX, ?syntax:binding({ty_var_bind, TyBound})),
                     Ctx2 = ?syntax:add_binding(Ctx1, X, B),
                     io:format("~ts\n~ts : ~ts\n", [TyX, X, ?syntax:format_type(Ctx1, TyBody)]),
                     Ctx2;
@@ -78,13 +78,13 @@ process_command(Command, Ctx) ->
 check_binding(Info, Ctx, B) ->
     case B of
         name_bind -> name_bind;
-        ty_var_bind -> ty_var_bind;
+        {ty_var_bind, TyS} -> {ty_var_bind, TyS};
         {ty_abb_bind, TyT} -> {ty_abb_bind, TyT};
         {var_bind, TyT} -> {var_bind, TyT};
         {tm_abb_bind, T, none} -> {tm_abb_bind, T, ?core:type_of(Ctx, T)};
         {tm_abb_bind, T, TyT} ->
             TyT_ = ?core:type_of(Ctx, T),
-            case ?core:types_equiv(Ctx, TyT_, TyT) of
+            case ?core:subtype(Ctx, TyT_, TyT) of
                 true ->
                     {tm_abb_bind, T, TyT};
                 false ->
@@ -96,7 +96,8 @@ check_binding(Info, Ctx, B) ->
 format_binding_type(Ctx, B) ->
     case B of
         name_bind -> "";
-        ty_var_bind -> "";
+        {ty_var_bind, TyS} ->
+            io_lib:format("<: ~ts", [?syntax:format_type(Ctx, TyS)]);
         {var_bind, TyT} ->
             io_lib:format(": ~ts", [?syntax:format_type(Ctx, TyT)]);
         {tm_abb_bind, T, MaybeTyT} ->
