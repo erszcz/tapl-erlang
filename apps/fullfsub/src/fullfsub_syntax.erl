@@ -49,15 +49,16 @@
 
 -type ty() :: {var, index(), context_size()}
             | {id, string()}
+            | top
             | {arr, ty(), ty()}
+            | bool
+            | {record, [{string(), ty()}]}
             | string
             | unit
-            | {record, [{string(), ty()}]}
-            | bool
             | float
+            | {all, string(), ty(), ty()}
             | nat
-            | {some, string(), ty()}
-            | {all, string(), ty()}.
+            | {some, string(), ty(), ty()}.
 
 -type info() :: {integer(), integer()}.
 
@@ -70,17 +71,19 @@
 -type term_() :: {var, info(), index(), context_size()}
                | {abs, info(), string(), ty(), term_()}
                | {app, info(), term_(), term_()}
+               | {true, info()}
+               | {false, info()}
+               | {if_, info(), term_(), term_(), term_()}
+               | {record, info(), [{string(), term_()}]}
+               | {proj, info(), term_(), string()}
                | {let_, info(), string(), term_(), term_()}
                | {fix, info(), term_()}
                | {string, info(), string()}
                | {unit, info()}
                | {ascribe, info(), term_(), ty()}
-               | {record, info(), [{string(), term_()}]}
-               | {proj, info(), term_(), string()}
-               | {true, info()}
-               | {false, info()}
-               | {if_, info(), term_(), term_(), term_()}
                | {float, info(), float()}
+               | {ty_abs, info(), string(), ty(), term_()}
+               | {ty_app, info(), term_(), ty()}
                | {timesfloat, info(), term_(), term_()}
                | {zero, info()}
                | {succ, info(), term_()}
@@ -88,14 +91,12 @@
                | {is_zero, info(), term_()}
                | {inert, info(), ty()}
                | {pack, info(), ty(), term_(), ty()}
-               | {unpack, info(), string(), string(), term_(), term_()}
-               | {ty_abs, info(), string(), term_()}
-               | {ty_app, info(), term_(), ty()}.
+               | {unpack, info(), string(), string(), term_(), term_()}.
 %% TAPL `term' type, but `term()' is a builtin type in Erlang,
 %% hence the name `term_()'.
 
 -type binding() :: name_bind
-                 | ty_var_bind
+                 | {ty_var_bind, ty()}
                  | {var_bind, ty()}
                  | {ty_abb_bind, ty()}
                  | {tm_abb_bind, term_(), ty() | none}.
@@ -115,6 +116,7 @@ ty(Ty) ->
     case Ty of
         {var, _, _} -> Ty;
         {id, _} -> Ty;
+        top -> Ty;
         {arr, _, _} -> Ty;
         unit -> Ty;
         {record, _} -> Ty;
@@ -122,8 +124,8 @@ ty(Ty) ->
         string -> Ty;
         float -> Ty;
         nat -> Ty;
-        {some, _, _} -> Ty;
-        {all, _, _} -> Ty
+        {some, _, _, _} -> Ty;
+        {all, _, _, _} -> Ty
     end.
 
 -spec info(token()) -> info().
@@ -159,7 +161,7 @@ term_(T) ->
         {inert, _, _} -> T;
         {pack, _, _, _, _} -> T;
         {unpack, _, _, _, _, _} -> T;
-        {ty_abs, _, _, _} -> T;
+        {ty_abs, _, _, _, _} -> T;
         {ty_app, _, _, _} -> T
     end.
 
@@ -167,7 +169,7 @@ term_(T) ->
 binding(B) ->
     case B of
         name_bind -> B;
-        ty_var_bind -> B;
+        {ty_var_bind, _} -> B;
         {var_bind, _} -> B;
         {ty_abb_bind, _} -> B;
         {tm_abb_bind, _, _} -> B
@@ -257,19 +259,20 @@ type_map(OnTyVarF, C, Ty) ->
     case Ty of
         {var, X, N} -> OnTyVarF(C, X, N);
         {id, _} -> Ty;
+        {arr, Ty1, Ty2} ->
+            {arr, type_map(OnTyVarF, C, Ty1), type_map(OnTyVarF, C, Ty2)};
+        top -> Ty;
+        bool -> Ty;
+        {record, FieldTys} ->
+            {record, [ {L, type_map(OnTyVarF, C, FTy)} || {L, FTy} <- FieldTys ]};
         string -> Ty;
         unit -> Ty;
         float -> Ty;
-        bool -> Ty;
+        {all, TyX, Ty1, Ty2} ->
+            {all, TyX, type_map(OnTyVarF, C, Ty1), type_map(OnTyVarF, C + 1, Ty2)};
         nat -> Ty;
-        {arr, Ty1, Ty2} ->
-            {arr, type_map(OnTyVarF, C, Ty1), type_map(OnTyVarF, C, Ty2)};
-        {some, TyX, Ty2} ->
-            {some, TyX, type_map(OnTyVarF, C + 1, Ty2)};
-        {all, TyX, Ty2} ->
-            {all, TyX, type_map(OnTyVarF, C + 1, Ty2)};
-        {record, FieldTys} ->
-            {record, [ {L, type_map(OnTyVarF, C, FTy)} || {L, FTy} <- FieldTys ]}
+        {some, TyX, Ty1, Ty2} ->
+            {some, TyX, type_map(OnTyVarF, C, Ty1), type_map(OnTyVarF, C + 1, Ty2)}
     end.
 
 -spec term_map(OnVarF, OnTypeF, non_neg_integer(), term_()) -> term_() when
@@ -322,8 +325,8 @@ term_map(OnVarF, OnTypeF, C, T) ->
             {unpack, FInfo, TyX, X,
              term_map(OnVarF, OnTypeF, C, T1),
              term_map(OnVarF, OnTypeF, C + 2, T2)};
-        {ty_abs, FInfo, TyX, T2} ->
-            {ty_abs, FInfo, TyX, term_map(OnVarF, OnTypeF, C + 1, T2)};
+        {ty_abs, FInfo, TyX, Ty1, T2} ->
+            {ty_abs, FInfo, TyX, OnTypeF(C, Ty1), term_map(OnVarF, OnTypeF, C + 1, T2)};
         {ty_app, FInfo, T1, Ty2} ->
             {ty_app, FInfo, term_map(OnVarF, OnTypeF, C, T1), OnTypeF(C, Ty2)};
         {proj, FInfo, T1, Label} ->
@@ -379,7 +382,8 @@ type_shift(D, Ty) ->
 binding_shift(D, Bind) ->
     case Bind of
         name_bind -> name_bind;
-        ty_var_bind -> ty_var_bind;
+        {ty_var_bind, Ty} ->
+            {ty_var_bind, type_shift(D, Ty)};
         {ty_abb_bind, Ty} ->
             {ty_abb_bind, type_shift(D, Ty)};
         {var_bind, Ty} ->
@@ -486,7 +490,7 @@ term_info(T) ->
         {inert, Info, _} -> Info;
         {pack, Info, _, _, _} -> Info;
         {unpack, Info, _, _, _, _} -> Info;
-        {ty_abs, Info, _, _} -> Info;
+        {ty_abs, Info, _, _, _} -> Info;
         {ty_app, Info, _, _} -> Info
     end.
 
@@ -523,14 +527,24 @@ prettypr_type(Ctx, Ty) ->
 -spec prettypr_type(boolean(), context(), ty()) -> prettypr:document().
 prettypr_type(Outer, Ctx, Ty) ->
     case Ty of
-        {all, TyX, Ty2} ->
+        {all, TyX, Ty1, Ty2} ->
             {NewCtx, TyX_} = pick_fresh_name(Ctx, TyX),
             prettypr:par([prettypr:text("All"),
-                          prettypr:beside(prettypr:text(TyX_),
+                          prettypr:beside(prettypr:beside(prettypr:text(TyX_),
+                                                          maybe_print_bound(Ctx, Ty1)),
                                           prettypr:text(".")),
                           prettypr_type(Outer, NewCtx, Ty2)], 2);
         _ ->
             prettypr_arrow_type(Outer, Ctx, Ty)
+    end.
+
+-spec maybe_print_bound(context(), ty()) -> prettypr:document().
+maybe_print_bound(Ctx, Ty) ->
+    case Ty of
+        top ->
+            prettypr:empty();
+        _ ->
+            prettypr:beside(prettypr:text("<:"), prettypr_type(false, Ctx, Ty))
     end.
 
 -spec prettypr_arrow_type(boolean(), context(), ty()) -> prettypr:document().
@@ -559,6 +573,8 @@ prettypr_a_type(Outer, Ctx, Ty) ->
             end;
         {id, B} ->
             prettypr:text(B);
+        top ->
+            prettypr:text("Top");
         string ->
             prettypr:text("String");
         unit ->
@@ -578,10 +594,11 @@ prettypr_a_type(Outer, Ctx, Ty) ->
             prettypr:text("Float");
         nat ->
             prettypr:text("Nat");
-        {some, TyX, Ty2} ->
+        {some, TyX, Ty1, Ty2} ->
             {NewCtx, TyX_} = pick_fresh_name(Ctx, TyX),
             prettypr:par([prettypr:text("{Some"),
-                          prettypr:beside(prettypr:text(TyX_),
+                          prettypr:beside(prettypr:beside(prettypr:text(TyX_),
+                                                          maybe_print_bound(Ctx, Ty1)),
                                           prettypr:text(",")),
                           prettypr:beside(prettypr_type(false, NewCtx, Ty2),
                                           prettypr:text("}"))], 2);
@@ -630,10 +647,11 @@ prettypr_term(Outer, Ctx, T) ->
                           prettypr:beside(prettypr_term(false, Ctx, T1),
                                           prettypr:text("in")),
                           prettypr_term(Outer, Ctx2, T2)], 0);
-        {ty_abs, _Info, TyX, T2} ->
+        {ty_abs, _Info, TyX, Ty1, T2} ->
             {NewCtx, TyX_} = pick_fresh_name(Ctx, TyX),
             prettypr:par([prettypr:text("lambda"),
-                          prettypr:beside(prettypr:text(TyX_),
+                          prettypr:beside(prettypr:beside(prettypr:text(TyX_),
+                                                          maybe_print_bound(Ctx, Ty1)),
                                           prettypr:text(".")),
                           prettypr_term(Outer, NewCtx, T2)], 2);
         _ ->
@@ -761,8 +779,9 @@ prettypr_binding(Ctx, B) ->
     case B of
         name_bind ->
             prettypr:empty();
-        ty_var_bind ->
-            prettypr:empty();
+        {ty_var_bind, Ty} ->
+            prettypr:beside(prettypr:text("<:"),
+                            prettypr_type(false, Ctx, Ty));
         {var_bind, Ty} ->
             prettypr:follow(prettypr:text(":"),
                             prettypr_type(Ctx, Ty), 2);
