@@ -1,11 +1,11 @@
 Nonterminals
     Top Command Binder Term AppTerm PathTerm ATerm Fields Field
-    AType ArrowType AscribeTerm FieldType FieldTypes TermSeq TyBinder Type.
+    AType ArrowType AscribeTerm FieldType FieldTypes TermSeq TyBinder Type OType.
 
 Terminals
     %% Keyword tokens
-    inert lambda fix letrec ustring unit uunit if then else true false bool timesfloat
-    ufloat succ pred iszero nat some let in as all
+    inert lambda ttop fix letrec ustring unit uunit if then else true false bool timesfloat
+    ufloat leq succ pred iszero nat some let in as all
 
     %% Identifier and constant value tokens
     ucid lcid int_value float_value string_value
@@ -37,7 +37,7 @@ Command -> Term             : fun (Ctx) ->
                               end.
 Command -> ucid             : fun (Ctx) ->
                                       %% TyBinder is empty
-                                      B = binding(ty_var_bind),
+                                      B = binding({ty_var_bind, ty(top)}),
                                       Cmd = command({bind, info('$1'), string_value('$1'), B}),
                                       {Cmd, add_name(Ctx, string_value('$1'))}
                               end.
@@ -71,8 +71,14 @@ Binder -> eq Term       : fun (Ctx) -> binding({tm_abb_bind, '$2'(Ctx), none}) e
 %% All type expressions
 Type -> ArrowType               : '$1'.
 Type -> all ucid dot Type       : fun (Ctx) ->
+                                          OType = ty(top),
                                           NewCtx = add_name(Ctx, string_value('$2')),
-                                          ty({all, string_value('$2'), '$4'(NewCtx)})
+                                          ty({all, string_value('$2'), OType, '$4'(NewCtx)})
+                                  end.
+Type -> all ucid OType dot Type : fun (Ctx) ->
+                                          OType = '$3'(Ctx),
+                                          NewCtx = add_name(Ctx, string_value('$2')),
+                                          ty({all, string_value('$2'), OType, '$5'(NewCtx)})
                                   end.
 
 
@@ -87,19 +93,28 @@ AType -> ucid                       : fun ( Ctx) ->
                                                   ty({id, string_value('$1')})
                                           end
                                       end.
-AType -> ustring                    : fun (_Ctx) -> ty(string) end.
-AType -> uunit                      : fun (_Ctx) -> ty(unit) end.
+AType -> ttop                       : fun (_Ctx) -> ty(top) end.
+AType -> bool                       : fun (_Ctx) -> ty(bool) end.
 AType -> lcurly rcurly              : fun (_Ctx) -> ty({record, []}) end.
 AType -> lcurly FieldTypes rcurly   : fun ( Ctx) -> ty({record, '$2'(Ctx, 1)}) end.
-AType -> bool                       : fun (_Ctx) -> ty(bool) end.
+AType -> ustring                    : fun (_Ctx) -> ty(string) end.
+AType -> uunit                      : fun (_Ctx) -> ty(unit) end.
 AType -> ufloat                     : fun (_Ctx) -> ty(float) end.
 AType -> nat                        : fun (_Ctx) -> ty(nat) end.
 AType -> lcurly some ucid comma Type rcurly :
         fun (Ctx) ->
+            OType = ty(top),
             NewCtx = add_name(Ctx, string_value('$3')),
-            ty({some, string_value('$3'), '$5'(NewCtx)})
+            ty({some, string_value('$3'), OType, '$5'(NewCtx)})
+        end.
+AType -> lcurly some ucid OType comma Type rcurly :
+        fun (Ctx) ->
+            OType = '$4'(Ctx),
+            NewCtx = add_name(Ctx, string_value('$3')),
+            ty({some, string_value('$3'), OType, '$6'(NewCtx)})
         end.
 
+TyBinder -> leq Type                : fun ( Ctx) -> binding({ty_var_bind, '$2'(Ctx)}) end.
 TyBinder -> eq Type                 : fun ( Ctx) -> binding({ty_abb_bind, '$2'(Ctx)}) end.
 
 
@@ -118,6 +133,10 @@ Term -> lambda uscore colon Type dot Term :
         fun (Ctx) ->
             NewCtx = add_name(Ctx, "_"),
             term_({abs, info('$1'), "_", '$4'(Ctx), '$6'(NewCtx)})
+        end.
+Term -> if Term then Term else Term :
+        fun (Ctx) ->
+            term_({if_, info('$1'), '$2'(Ctx), '$4'(Ctx), '$6'(Ctx)})
         end.
 Term -> let lcid eq Term in Term :
         fun (Ctx) ->
@@ -138,10 +157,6 @@ Term -> letrec lcid colon Type eq Term in Term :
             Fix = term_({fix, Info, Abs}),
             term_({let_, Info, X, Fix, '$8'(NewCtx)})
         end.
-Term -> if Term then Term else Term :
-        fun (Ctx) ->
-            term_({if_, info('$1'), '$2'(Ctx), '$4'(Ctx), '$6'(Ctx)})
-        end.
 Term -> let lcurly ucid comma lcid rcurly eq Term in Term :
         fun (Ctx) ->
             TyX = string_value('$3'),
@@ -152,8 +167,15 @@ Term -> let lcurly ucid comma lcid rcurly eq Term in Term :
         end.
 Term -> lambda ucid dot Term :
         fun (Ctx) ->
+            OType = ty(top),
             NewCtx = add_name(Ctx, string_value('$2')),
-            term_({ty_abs, info('$1'), string_value('$2'), '$4'(NewCtx)})
+            term_({ty_abs, info('$1'), string_value('$2'), OType, '$4'(NewCtx)})
+        end.
+Term -> lambda ucid OType dot Term :
+        fun (Ctx) ->
+            OType = '$3'(Ctx),
+            NewCtx = add_name(Ctx, string_value('$2')),
+            term_({ty_abs, info('$1'), string_value('$2'), OType, '$5'(NewCtx)})
         end.
 
 
@@ -231,6 +253,8 @@ Fields -> Field comma Fields    : fun (Ctx, I) -> ['$1'(Ctx, I) | '$3'(Ctx, I+1)
 
 Field -> lcid eq Term   : fun (Ctx, _) -> {string_value('$1'), '$3'(Ctx)} end.
 Field -> Term           : fun (Ctx, I) -> {integer_to_list(I), '$1'(Ctx)} end.
+
+OType -> leq Type : '$2'.
 
 Erlang code.
 
