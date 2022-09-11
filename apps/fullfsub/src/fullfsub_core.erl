@@ -145,7 +145,7 @@ eval1(Ctx, T) ->
                 _ ->
                     throw(no_rule_applies)
             end;
-        {ty_app, _Info, {ty_abs, _, _, T11}, Ty2} ->
+        {ty_app, _Info, {ty_abs, _, _, _, T11}, Ty2} ->
             ?syntax:type_term_subst_top(Ty2, T11);
         {ty_app, Info, T1, Ty2} ->
             T1_ = eval1(Ctx, T1),
@@ -180,7 +180,7 @@ is_value(Ctx, T) ->
             lists:all(fun ({_Label, T1}) -> is_value(Ctx, T1) end, Fields);
         {pack, _, _, V1, _} ->
             is_value(Ctx, V1);
-        {ty_abs, _, _, _} ->
+        {ty_abs, _, _, _, _} ->
             true;
         _ ->
             is_numeric_value(Ctx, T)
@@ -193,6 +193,21 @@ is_numeric_value(Ctx, T) ->
         {succ, _, T1} -> is_numeric_value(Ctx, T1);
         _ -> false
     end.
+
+-spec promote(context(), ty()) -> ty().
+promote(Ctx, Ty) ->
+    case Ty of
+        {var, Index, _} ->
+            case ?syntax:get_binding(dummy_info(), Ctx, Index) of
+                {ty_var_bind, TyT} -> TyT;
+                _ -> throw(no_rule_applies)
+            end;
+        _ ->
+            throw(no_rule_applies)
+    end.
+
+dummy_info() ->
+    {0,0}.
 
 -spec is_ty_abb(context(), ty() | index()) -> boolean().
 is_ty_abb(Ctx, {var, Index, _}) ->
@@ -241,6 +256,7 @@ types_equiv(Ctx, TyS0, TyT0) ->
     TyTIsTyAbb = is_ty_abb(Ctx, TyT),
     case {TyS, TyT} of
         {string, string} -> true;
+        {top, top} -> true;
         {unit, unit} -> true;
         {{id, IdS}, {id, IdT}} -> IdS == IdT;
         {float, float} -> true;
@@ -256,9 +272,9 @@ types_equiv(Ctx, TyS0, TyT0) ->
             types_equiv(Ctx, TyS2, TyT2);
         {bool, bool} -> true;
         {nat, nat} -> true;
-        {{some, TyX1, TyS2}, {some, _, TyT2}} ->
+        {{some, TyX1, TyS1, TyS2}, {some, _, TyT1, TyT2}} ->
             Ctx1 = ?syntax:add_name(Ctx, TyX1),
-            types_equiv(Ctx1, TyS2, TyT2);
+            types_equiv(Ctx, TyS1, TyT1) andalso types_equiv(Ctx1, TyS2, TyT2);
         {{record, Fields1}, {record, Fields2}} ->
             length(Fields1) == length(Fields2)
             andalso
@@ -271,32 +287,172 @@ types_equiv(Ctx, TyS0, TyT0) ->
                               end
                       end,
                       Fields2);
-        {{all, TyX1, TyS2}, {all, _, TyT2}} ->
+        {{all, TyX1, TyS1, TyS2}, {all, _, TyT1, TyT2}} ->
             Ctx1 = ?syntax:add_name(Ctx, TyX1),
-            types_equiv(Ctx1, TyS2, TyT2);
+            types_equiv(Ctx, TyS1, TyT1) andalso types_equiv(Ctx1, TyS2, TyT2);
         _ ->
             false
+    end.
+
+-spec subtype(context(), ty(), ty()) -> boolean().
+subtype(Ctx, TyS, TyT) ->
+    types_equiv(Ctx, TyS, TyT)
+    orelse begin
+               TyS_ = simplify_type(Ctx, TyS),
+               TyT_ = simplify_type(Ctx, TyT),
+               subtype_(Ctx, TyS_, TyT_)
+           end.
+
+%% When calling recursively call subtype/3 (without the trailing _) to check type equivalence, too.
+-spec subtype_(context(), ty(), ty()) -> boolean().
+subtype_(Ctx, TyS, TyT) ->
+    case {TyS, TyT} of
+        {_, top} ->
+            true;
+        {{arr, TyS1, TyS2}, {arr, TyT1, TyT2}} ->
+            subtype(Ctx, TyT1, TyS1) andalso subtype(Ctx, TyS2, TyT2);
+        {{record, FieldsS}, {record, FieldsT}} ->
+            lists:all(fun ({TLabelI, TTyI}) ->
+                        case lists:keyfind(TLabelI, 1, FieldsS) of
+                            {TLabelI, STyI} ->
+                                subtype(Ctx, STyI, TTyI);
+                            false ->
+                                false
+                        end
+                      end, FieldsT);
+        {{var, _, _}, _} ->
+            subtype(Ctx, promote(Ctx, TyS), TyT);
+        {{all, TyX1, TyS1, TyS2}, {all, _, TyT1, TyT2}} ->
+            (subtype(Ctx, TyS1, TyT1) andalso subtype(Ctx, TyT1, TyS1))
+            andalso begin
+                        Ctx1 = ?syntax:add_binding(Ctx, TyX1, binding({ty_var_bind, TyT1})),
+                        subtype(Ctx1, TyS2, TyT2)
+                    end;
+        {{some, TyX1, TyS1, TyS2}, {some, _, TyT1, TyT2}} ->
+            (subtype(Ctx, TyS1, TyT1) andalso subtype(Ctx, TyT1, TyS1))
+            andalso begin
+                        Ctx1 = ?syntax:add_binding(Ctx, TyX1, binding({ty_var_bind, TyT1})),
+                        subtype(Ctx1, TyS2, TyT2)
+                    end;
+        _ ->
+            false
+    end.
+
+%% Calculate the supertype (least upper bound) of the argument types.
+-spec join(context(), ty(), ty()) -> ty().
+join(Ctx, TyS, TyT) ->
+    case {subtype(Ctx, TyS, TyT), subtype(Ctx, TyT, TyS)} of
+        {true, _} ->
+            TyT;
+        {_, true} ->
+            TyS;
+        _ ->
+            TyS_ = simplify_type(Ctx, TyS),
+            TyT_ = simplify_type(Ctx, TyT),
+            join_(Ctx, TyS_, TyT_)
+    end.
+
+-spec join_(context(), ty(), ty()) -> ty().
+join_(Ctx, TyS, TyT) ->
+    case {TyS, TyT} of
+        {{record, FieldsS}, {record, FieldsT}} ->
+            LabelsS = proplists:get_keys(FieldsS),
+            LabelsT = proplists:get_keys(FieldsT),
+            CommonLabels = lists:filter(fun (Label) -> lists:member(Label, LabelsT) end, LabelsS),
+            CommonFields = lists:map(fun (Label) ->
+                                             {Label, TySI} = lists:keyfind(Label, 1, FieldsS),
+                                             {Label, TyTI} = lists:keyfind(Label, 1, FieldsT),
+                                             {Label, join(Ctx, TySI, TyTI)}
+                                     end, CommonLabels),
+            ty({record, CommonFields});
+        {{all, TyX, TyS1, _TyS2}, {all, _, TyT1, TyT2}} ->
+            case not (subtype(Ctx, TyS1, TyT1) andalso subtype(Ctx, TyT1, TyS1)) of
+                true ->
+                    ty(top);
+                false ->
+                    Ctx1 = ?syntax:add_binding(Ctx, TyX, binding({ty_var_bind, TyT1})),
+                    ty({all, TyX, TyS1, join(Ctx1, TyT1, TyT2)})
+            end;
+        {{arr, TyS1, TyS2}, {arr, TyT1, TyT2}} ->
+            try
+                ty({arr, meet(Ctx, TyS1, TyT1), join(Ctx, TyS2, TyT2)})
+            catch
+                throw:cannot_meet ->
+                    ty(top)
+            end;
+        _ ->
+            ty(top)
+    end.
+
+%% Calculate the subtype (greatest lower bound) of the argument types.
+-spec meet(context(), ty(), ty()) -> ty().
+meet(Ctx, TyS, TyT) ->
+    case {subtype(Ctx, TyS, TyT), subtype(Ctx, TyT, TyS)} of
+        {true, _} ->
+            TyS;
+        {_, true} ->
+            TyT;
+        _ ->
+            TyS_ = simplify_type(Ctx, TyS),
+            TyT_ = simplify_type(Ctx, TyT),
+            meet_(Ctx, TyS_, TyT_)
+    end.
+
+-spec meet_(context(), ty(), ty()) -> ty().
+meet_(Ctx, TyS, TyT) ->
+    case {TyS, TyT} of
+        {{record, FieldsS}, {record, FieldsT}} ->
+            LabelsS = proplists:get_keys(FieldsS),
+            LabelsT = proplists:get_keys(FieldsT),
+            AllLabels = lists:append(LabelsS,
+                                     lists:filter(fun (L) -> not lists:member(L, LabelsS) end,
+                                                  LabelsT)),
+            AllFields = lists:map(fun (L) ->
+                                          case lists:member(L, AllLabels) of
+                                              true ->
+                                                  {L, TySI} = lists:keyfind(L, 1, FieldsS),
+                                                  {L, TyTI} = lists:keyfind(L, 1, FieldsT),
+                                                  {L, meet(Ctx, TySI, TyTI)};
+                                              false ->
+                                                  case lists:member(L, LabelsS) of
+                                                      true ->
+                                                          {L, TySI} = lists:keyfind(L, 1, FieldsS),
+                                                          {L, TySI};
+                                                      false ->
+                                                          {L, TyTI} = lists:keyfind(L, 1, FieldsT),
+                                                          {L, TyTI}
+                                                  end
+                                          end
+                                  end,
+                                  AllLabels),
+            ty({record, AllFields});
+        {{all, TyX, TyS1, _TyS2}, {all, _, TyT1, TyT2}} ->
+            case not (subtype(Ctx, TyS1, TyT1) andalso subtype(Ctx, TyT1, TyS1)) of
+                true ->
+                    throw(cannot_meet);
+                false ->
+                    Ctx1 = ?syntax:add_binding(Ctx, TyX, binding({ty_var_bind, TyT1})),
+                    ty({all, TyX, TyS1, meet(Ctx1, TyT1, TyT2)})
+            end;
+        _ ->
+            throw(cannot_meet)
+    end.
+
+-spec lookup_constraint(context(), ty()) -> ty().
+lookup_constraint(Ctx, TyS) ->
+    TyS_ = simplify_type(Ctx, TyS),
+    try
+        lookup_constraint(Ctx, promote(Ctx, TyS_))
+    catch
+        _:no_rule_applies ->
+            TyS_
     end.
 
 -spec type_of(context(), term_()) -> ty().
 type_of(Ctx, T) ->
     case T of
-        {inert, _, Ty} -> Ty;
-        {true, _} -> bool;
-        {false, _} -> bool;
-        {if_, Info, T1, T2, T3} ->
-            case types_equiv(Ctx, type_of(Ctx, T1), bool) of
-                true ->
-                    TyT2 = type_of(Ctx, T2),
-                    case types_equiv(Ctx, TyT2, type_of(Ctx, T3)) of
-                        true ->
-                            TyT2;
-                        false ->
-                            type_error(Info, "arms of conditional have different types")
-                    end;
-                false ->
-                    type_error(Info, "guard of conditional not a boolean")
-            end;
+        {inert, _, Ty} ->
+            Ty;
         {var, Info, Index, _} ->
             ?syntax:get_type_from_context(Info, Ctx, Index);
         {abs, _, X, TyX, T2} ->
@@ -306,9 +462,9 @@ type_of(Ctx, T) ->
         {app, Info, T1, T2} ->
             TyT1 = type_of(Ctx, T1),
             TyT2 = type_of(Ctx, T2),
-            case simplify_type(Ctx, TyT1) of
+            case lookup_constraint(Ctx, TyT1) of
                 {arr, TyT11, TyT12} ->
-                    case types_equiv(Ctx, TyT2, TyT11) of
+                    case subtype(Ctx, TyT2, TyT11) of
                         true ->
                             TyT12;
                         false ->
@@ -317,34 +473,14 @@ type_of(Ctx, T) ->
                 _ ->
                     type_error(Info, "arrow type expected")
             end;
-        {let_, _, X, T1, T2} ->
-            TyT1 = type_of(Ctx, T1),
-            NewCtx = ?syntax:add_binding(Ctx, X, {var_bind, TyT1}),
-            ?syntax:type_shift(-1, type_of(NewCtx, T2));
-        {fix, Info, T1} ->
-            TyT1 = type_of(Ctx, T1),
-            case simplify_type(Ctx, TyT1) of
-                {arr, TyT11, TyT12} ->
-                    case types_equiv(Ctx, TyT12, TyT11) of
-                        true ->
-                            TyT12;
-                        false ->
-                            type_error(Info,
-                                       "result of body~n~n    ~p~n~n"
-                                       "not compatible with domain~n~n    ~p~n",
-                                       [TyT12, TyT11])
-                    end;
-                _ ->
-                    type_error(Info, "arrow type expected")
-            end;
-        {string, _, _} -> string;
-        {unit, _} -> unit;
-        {ascribe, Info, T1, TyT} ->
-            case types_equiv(Ctx, type_of(Ctx, T1), TyT) of
+        {true, _} -> bool;
+        {false, _} -> bool;
+        {if_, Info, T1, T2, T3} ->
+            case subtype(Ctx, type_of(Ctx, T1), bool) of
                 true ->
-                    TyT;
+                    join(Ctx, type_of(Ctx, T2), type_of(Ctx, T3));
                 false ->
-                    type_error(Info, "body of as-term does not have the expected type")
+                    type_error(Info, "guard of conditional not a boolean")
             end;
         {record, _, Fields} ->
             FieldTypes = lists:map(fun ({Li, Ti}) ->
@@ -352,7 +488,7 @@ type_of(Ctx, T) ->
                                    end, Fields),
             {record, FieldTypes};
         {proj, Info, T1, L} ->
-            case simplify_type(Ctx, type_of(Ctx, T1)) of
+            case lookup_constraint(Ctx, type_of(Ctx, T1)) of
                 {record, FieldTypes} ->
                     case lists:keyfind(L, 1, FieldTypes) of
                         {L, Ty} ->
@@ -363,33 +499,76 @@ type_of(Ctx, T) ->
                 _ ->
                     type_error(Info, "expected record type")
             end;
+        {let_, _, X, T1, T2} ->
+            TyT1 = type_of(Ctx, T1),
+            NewCtx = ?syntax:add_binding(Ctx, X, {var_bind, TyT1}),
+            ?syntax:type_shift(-1, type_of(NewCtx, T2));
+        {fix, Info, T1} ->
+            TyT1 = type_of(Ctx, T1),
+            case lookup_constraint(Ctx, TyT1) of
+                {arr, TyT11, TyT12} ->
+                    case subtype(Ctx, TyT12, TyT11) of
+                        true ->
+                            TyT12;
+                        false ->
+                            type_error(Info, "result of body not compatible with domain")
+                    end;
+                _ ->
+                    type_error(Info, "arrow type expected")
+            end;
+        {string, _, _} -> string;
+        {unit, _} -> unit;
+        {ascribe, Info, T1, TyT} ->
+            case subtype(Ctx, type_of(Ctx, T1), TyT) of
+                true ->
+                    TyT;
+                false ->
+                    type_error(Info, "body of as-term does not have the expected type")
+            end;
         {float, _, _} -> float;
         {timesfloat, Info, T1, T2} ->
-            case {types_equiv(Ctx, type_of(Ctx, T1), float),
-                  types_equiv(Ctx, type_of(Ctx, T2), float)}
+            case {subtype(Ctx, type_of(Ctx, T1), float),
+                  subtype(Ctx, type_of(Ctx, T2), float)}
             of
                 {true, true} ->
                     float;
                 _ ->
                     type_error(Info, "argument of timesfloat is not a number")
             end;
+        {ty_abs, _Info, TyX, TyT1, T2} ->
+            Ctx1 = ?syntax:add_binding(Ctx, TyX, binding({ty_var_bind, TyT1})),
+            TyT2 = type_of(Ctx1, T2),
+            ty({all, TyX, TyT1, TyT2});
+        {ty_app, Info, T1, TyT2} ->
+            TyT1 = type_of(Ctx, T1),
+            case lookup_constraint(Ctx, TyT1) of
+                {all, _, TyT11, TyT12} ->
+                    case subtype(Ctx, TyT2, TyT11) of
+                        false ->
+                            type_error(Info, "type parameter type mismatch");
+                        true ->
+                            ?syntax:type_subst_top(TyT2, TyT12)
+                    end;
+                _ ->
+                    type_error(Info, "universal type expected")
+            end;
         {zero, _} -> nat;
         {succ, Info, T1} ->
-            case types_equiv(Ctx, type_of(Ctx, T1), nat) of
+            case subtype(Ctx, type_of(Ctx, T1), nat) of
                 true ->
                     nat;
                 false ->
                     type_error(Info, "argument of succ is not a number")
             end;
         {pred, Info, T1} ->
-            case types_equiv(Ctx, type_of(Ctx, T1), nat) of
+            case subtype(Ctx, type_of(Ctx, T1), nat) of
                 true ->
                     nat;
                 false ->
                     type_error(Info, "argument of pred is not a number")
             end;
         {is_zero, Info, T1} ->
-            case types_equiv(Ctx, type_of(Ctx, T1), nat) of
+            case subtype(Ctx, type_of(Ctx, T1), nat) of
                 true ->
                     bool;
                 false ->
@@ -397,40 +576,33 @@ type_of(Ctx, T) ->
             end;
         {pack, Info, TyT1, T2, TyT} ->
             case simplify_type(Ctx, TyT) of
-                {some, _TyY, TyT2} ->
-                    TyU = type_of(Ctx, T2),
-                    TyU_ = ?syntax:type_subst_top(TyT1, TyT2),
-                    case types_equiv(Ctx, TyU, TyU_) of
-                        true ->
-                            TyT;
+                {some, _TyY, TyBound, TyT2} ->
+                    case subtype(Ctx, TyT1, TyBound) of
                         false ->
-                            type_error(Info, "doesn't match declared type")
+                            type_error(Info, "hidden type not a subtype of bound");
+                        true ->
+                            TyU = type_of(Ctx, T2),
+                            TyU_ = ?syntax:type_subst_top(TyT1, TyT2),
+                            case subtype(Ctx, TyU, TyU_) of
+                                true ->
+                                    TyT;
+                                false ->
+                                    type_error(Info, "doesn't match declared type")
+                            end
                     end;
                 _ ->
                     type_error(Info, "existential type expected")
             end;
         {unpack, Info, TyX, X, T1, T2} ->
             TyT1 = type_of(Ctx, T1),
-            case simplify_type(Ctx, TyT1) of
-                {some, _TyY, TyT11} ->
-                    Ctx1 = ?syntax:add_binding(Ctx, TyX, binding(ty_var_bind)),
+            case lookup_constraint(Ctx, TyT1) of
+                {some, _TyY, TyBound, TyT11} ->
+                    Ctx1 = ?syntax:add_binding(Ctx, TyX, binding({ty_var_bind, TyBound})),
                     Ctx2 = ?syntax:add_binding(Ctx1, X, binding({var_bind, TyT11})),
                     TyT2 = type_of(Ctx2, T2),
                     ?syntax:type_shift(-2, TyT2);
                 _ ->
                     type_error(Info, "existential type expected")
-            end;
-        {ty_abs, _Info, TyX, T2} ->
-            Ctx1 = ?syntax:add_binding(Ctx, TyX, binding(ty_var_bind)),
-            TyT2 = type_of(Ctx1, T2),
-            ty({all, TyX, TyT2});
-        {ty_app, Info, T1, TyT2} ->
-            TyT1 = type_of(Ctx, T1),
-            case simplify_type(Ctx, TyT1) of
-                {all, _, TyT12} ->
-                    ?syntax:type_subst_top(TyT2, TyT12);
-                _ ->
-                    type_error(Info, "universal type expected")
             end
     end.
 
