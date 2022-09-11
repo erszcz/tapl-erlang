@@ -49,6 +49,7 @@ reserved_word(Chars) ->
         "type" -> 'type';
         "inert" -> 'inert';
         "lambda" -> 'lambda';
+        "Top" -> 'ttop';
         "fix" -> 'fix';
         "letrec" -> 'letrec';
         "String" -> 'ustring';
@@ -62,6 +63,8 @@ reserved_word(Chars) ->
         "Bool" -> 'bool';
         "timesfloat" -> 'timesfloat';
         "Float" -> 'ufloat';
+        "<:" -> 'leq';
+        "All" -> 'all';
         "succ" -> 'succ';
         "pred" -> 'pred';
         "iszero" -> 'iszero';
@@ -70,7 +73,6 @@ reserved_word(Chars) ->
         "let" -> 'let';
         "in" -> 'in';
         "as" -> 'as';
-        "All" -> 'all';
 
         %% Symbols
         "_" -> uscore;

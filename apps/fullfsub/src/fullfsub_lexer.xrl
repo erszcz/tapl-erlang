@@ -37,7 +37,7 @@ Rules.
 [-+] :
     {token, create_id(TokenLine, TokenChars)}.
 
-[-~%\\+&\|:@`$]+ :
+[-~%\\+&\|<:@`$]+ :
     {token, create_id(TokenLine, TokenChars)}.
 
 [-=]+[>] :
