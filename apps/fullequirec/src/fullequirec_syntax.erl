@@ -38,7 +38,7 @@
               term_/0,
               ty/0]).
 
--include_lib("gradualizer/include/gradualizer.hrl").
+-include("gradualizer.hrl").
 
 %%
 %%' Datatypes

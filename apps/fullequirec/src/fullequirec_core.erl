@@ -17,7 +17,7 @@
 -type term_()   :: ?syntax:term_().
 -type ty()      :: ?syntax:ty().
 
--include_lib("gradualizer/include/gradualizer.hrl").
+-include("gradualizer.hrl").
 
 -spec eval(context(), term_()) -> term_().
 eval(Ctx, T) ->
